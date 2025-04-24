@@ -14,18 +14,67 @@ import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { UserForm } from "@/components/users/UserForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Users = () => {
-  const [users] = useState(mockUsers);
+  const [users, setUsers] = useState(mockUsers);
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleCreateUser = async (data: any) => {
+    setIsLoading(true);
+    try {
+      // Simulando uma chamada de API
+      const newUser = {
+        ...data,
+        id: Math.random().toString(36).substr(2, 9),
+        createdAt: new Date(),
+      };
+      
+      setUsers([newUser, ...users]);
+      setOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Usuário criado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Usuários do Sistema</h1>
-        <Button className="bg-gym-primary hover:bg-gym-secondary">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Usuário
-        </Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gym-primary hover:bg-gym-secondary">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Usuário
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Novo Usuário</DialogTitle>
+            </DialogHeader>
+            <UserForm onSubmit={handleCreateUser} isLoading={isLoading} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
