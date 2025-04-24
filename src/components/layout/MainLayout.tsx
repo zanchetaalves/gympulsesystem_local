@@ -15,7 +15,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-10 bg-white border-b h-14 flex items-center px-4">
-            <SidebarTrigger asChild>
+            <SidebarTrigger>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
