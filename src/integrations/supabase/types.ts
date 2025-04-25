@@ -9,7 +9,142 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string
+          birth_date: string
+          cpf: string
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          address: string
+          birth_date: string
+          cpf: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          address?: string
+          birth_date?: string
+          cpf?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          confirmed: boolean | null
+          created_at: string | null
+          id: string
+          payment_date: string
+          payment_method: string
+          subscription_id: string | null
+        }
+        Insert: {
+          amount: number
+          confirmed?: boolean | null
+          created_at?: string | null
+          id?: string
+          payment_date: string
+          payment_method: string
+          subscription_id?: string | null
+        }
+        Update: {
+          amount?: number
+          confirmed?: boolean | null
+          created_at?: string | null
+          id?: string
+          payment_date?: string
+          payment_method?: string
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          active: boolean | null
+          client_id: string | null
+          created_at: string | null
+          end_date: string
+          id: string
+          plan: string
+          start_date: string
+        }
+        Insert: {
+          active?: boolean | null
+          client_id?: string | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          plan: string
+          start_date: string
+        }
+        Update: {
+          active?: boolean | null
+          client_id?: string | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          plan?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          profile: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          profile: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          profile?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
