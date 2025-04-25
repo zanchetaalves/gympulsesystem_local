@@ -22,12 +22,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "@/types";
 
 const Users = () => {
   const [users, setUsers] = useState(mockUsers);
-  const [open, setOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   const handleCreateUser = async (data: any) => {
@@ -41,7 +55,7 @@ const Users = () => {
       };
       
       setUsers([newUser, ...users]);
-      setOpen(false);
+      setCreateDialogOpen(false);
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso!",
@@ -57,11 +71,61 @@ const Users = () => {
     }
   };
 
+  const handleEditUser = async (data: any) => {
+    setIsLoading(true);
+    try {
+      const updatedUsers = users.map(user => 
+        user.id === data.id ? { ...user, ...data } : user
+      );
+      
+      setUsers(updatedUsers);
+      setEditDialogOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Usuário atualizado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setSelectedUser(null);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    setIsLoading(true);
+    try {
+      if (!selectedUser) return;
+      
+      const filteredUsers = users.filter(user => user.id !== selectedUser.id);
+      setUsers(filteredUsers);
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário excluído com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Usuários do Sistema</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gym-primary hover:bg-gym-secondary">
               <Plus className="mr-2 h-4 w-4" />
@@ -116,12 +180,69 @@ const Users = () => {
                   </TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Dialog open={editDialogOpen && selectedUser?.id === user.id} onOpenChange={(open) => {
+                      setEditDialogOpen(open);
+                      if (!open) setSelectedUser(null);
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setSelectedUser(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Editar Usuário</DialogTitle>
+                        </DialogHeader>
+                        {selectedUser && (
+                          <UserForm 
+                            onSubmit={handleEditUser} 
+                            isLoading={isLoading} 
+                            defaultValues={selectedUser}
+                          />
+                        )}
+                      </DialogContent>
+                    </Dialog>
+
+                    <AlertDialog 
+                      open={deleteDialogOpen && selectedUser?.id === user.id}
+                      onOpenChange={(open) => {
+                        setDeleteDialogOpen(open);
+                        if (!open) setSelectedUser(null);
+                      }}
+                    >
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. O usuário será permanentemente excluído.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={handleDeleteUser}
+                            disabled={isLoading}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {isLoading ? "Excluindo..." : "Excluir"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}

@@ -24,6 +24,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("Email inválido"),
   profile: z.enum(["Admin", "Gerente", "Operador"]),
@@ -35,13 +36,15 @@ type UserFormData = z.infer<typeof formSchema>;
 interface UserFormProps {
   onSubmit: (data: UserFormData) => void;
   isLoading?: boolean;
+  defaultValues?: Partial<UserFormData>;
 }
 
-export function UserForm({ onSubmit, isLoading }: UserFormProps) {
+export function UserForm({ onSubmit, isLoading, defaultValues }: UserFormProps) {
   const form = useForm<UserFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       active: true,
+      ...defaultValues,
     },
   });
 
