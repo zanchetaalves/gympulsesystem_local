@@ -43,9 +43,13 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
 
+    // Corrigido para usar email/password explicitamente
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      }
     });
 
     if (error) {
