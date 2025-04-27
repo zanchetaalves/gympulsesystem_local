@@ -95,8 +95,10 @@ export function SubscriptionForm({
     
     const formattedData = {
       ...data,
-      startDate: new Date(data.startDate),
-      endDate: endDate,
+      start_date: new Date(data.startDate).toISOString(),
+      end_date: endDate.toISOString(),
+      client_id: data.clientId,
+      active: data.active,
     };
     
     onSubmit(formattedData);

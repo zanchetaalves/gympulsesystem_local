@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockSubscriptions, mockClients, plans } from "@/lib/mock-data";
+import { mockClients, plans } from "@/lib/mock-data";
 import { formatDate, isAboutToExpire } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, BarChart2 } from "lucide-react";
@@ -24,18 +23,112 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Subscription, Client } from "@/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Subscriptions = () => {
-  const [subscriptions, setSubscriptions] = useState(mockSubscriptions);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectClientDialogOpen, setSelectClientDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const getSubscriptionStatus = (subscription: typeof mockSubscriptions[0]) => {
+  const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar matrículas.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      return data || [];
+    },
+  });
+
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (data: Partial<Subscription>) => {
+      const { data: newSubscription, error } = await supabase
+        .from('subscriptions')
+        .insert([data])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return newSubscription;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      setCreateDialogOpen(false);
+      setSelectClientDialogOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Matrícula cadastrada com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao cadastrar matrícula.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async (data: Partial<Subscription>) => {
+      const { data: updatedSubscription, error } = await supabase
+        .from('subscriptions')
+        .update(data)
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updatedSubscription;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      setEditDialogOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Matrícula atualizada com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar matrícula.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateSubscription = async (data: any) => {
+    createSubscriptionMutation.mutate(data);
+  };
+
+  const handleEditSubscription = async (data: any) => {
+    updateSubscriptionMutation.mutate(data);
+  };
+
+  const selectClientForSubscription = (client: Client) => {
+    setSelectedClient(client);
+    setSelectClientDialogOpen(false);
+    setCreateDialogOpen(true);
+  };
+
+  const getSubscriptionStatus = (subscription: Subscription) => {
     const now = new Date();
     const endDate = new Date(subscription.endDate);
     
@@ -43,65 +136,6 @@ const Subscriptions = () => {
     if (endDate < now) return "expired";
     if (isAboutToExpire(endDate)) return "expiring";
     return "active";
-  };
-
-  const handleCreateSubscription = async (data: any) => {
-    setIsLoading(true);
-    try {
-      // Simulando uma chamada de API
-      const newSubscription = {
-        ...data,
-        id: Math.random().toString(36).substr(2, 9),
-      };
-      
-      setSubscriptions([newSubscription, ...subscriptions]);
-      setCreateDialogOpen(false);
-      setSelectClientDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Matrícula cadastrada com sucesso!",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao cadastrar matrícula.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setSelectedClient(null);
-    }
-  };
-
-  const handleEditSubscription = async (data: any) => {
-    setIsLoading(true);
-    try {
-      const updatedSubscriptions = subscriptions.map(subscription => 
-        subscription.id === data.id ? { ...subscription, ...data } : subscription
-      );
-      
-      setSubscriptions(updatedSubscriptions);
-      setEditDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Matrícula atualizada com sucesso!",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar matrícula.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setSelectedSubscription(null);
-    }
-  };
-
-  const selectClientForSubscription = (client: Client) => {
-    setSelectedClient(client);
-    setSelectClientDialogOpen(false);
-    setCreateDialogOpen(true);
   };
 
   return (
@@ -157,7 +191,7 @@ const Subscriptions = () => {
             </DialogHeader>
             <SubscriptionForm 
               onSubmit={handleCreateSubscription} 
-              isLoading={isLoading}
+              isLoading={isLoadingSubscriptions}
               selectedClientId={selectedClient?.id}
             />
           </DialogContent>
@@ -273,7 +307,7 @@ const Subscriptions = () => {
                           {selectedSubscription && (
                             <SubscriptionForm 
                               onSubmit={handleEditSubscription} 
-                              isLoading={isLoading} 
+                              isLoading={isLoadingSubscriptions} 
                               defaultValues={selectedSubscription}
                             />
                           )}
