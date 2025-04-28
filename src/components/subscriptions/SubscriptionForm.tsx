@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,19 +56,22 @@ export function SubscriptionForm({
   const [clients, setClients] = useState<Client[]>(mockClients);
   const [endDate, setEndDate] = useState<Date | null>(null);
   
+  const formattedDefaultValues = {
+    ...defaultValues,
+    startDate: defaultValues?.startDate 
+      ? new Date(defaultValues.startDate).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0],
+  };
+  
   const form = useForm<SubscriptionFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       active: true,
-      ...defaultValues,
+      ...formattedDefaultValues,
       clientId: selectedClientId || defaultValues?.clientId || "",
-      startDate: defaultValues?.startDate 
-        ? new Date(defaultValues.startDate).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0],
     },
   });
 
-  // Calcular a data de término com base no plano e data de início
   useEffect(() => {
     const planType = form.watch("plan") as PlanType;
     const startDateString = form.watch("startDate");
@@ -95,9 +97,9 @@ export function SubscriptionForm({
     
     const formattedData = {
       ...data,
-      start_date: new Date(data.startDate).toISOString(),
-      end_date: endDate.toISOString(),
-      client_id: data.clientId,
+      startDate: new Date(data.startDate),
+      endDate: endDate,
+      clientId: data.clientId,
       active: data.active,
     };
     

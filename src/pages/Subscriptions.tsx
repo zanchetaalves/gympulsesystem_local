@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Table,
@@ -26,6 +27,29 @@ import { Subscription, Client } from "@/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+// Adapter functions to convert between database and application types
+const dbToAppSubscription = (dbSubscription: any): Subscription => ({
+  id: dbSubscription.id,
+  clientId: dbSubscription.client_id,
+  plan: dbSubscription.plan,
+  startDate: new Date(dbSubscription.start_date),
+  endDate: new Date(dbSubscription.end_date),
+  active: dbSubscription.active ?? true,
+});
+
+const appToDbSubscription = (subscription: Partial<Subscription>) => ({
+  id: subscription.id,
+  client_id: subscription.clientId,
+  plan: subscription.plan,
+  start_date: subscription.startDate instanceof Date 
+    ? subscription.startDate.toISOString() 
+    : subscription.startDate,
+  end_date: subscription.endDate instanceof Date 
+    ? subscription.endDate.toISOString() 
+    : subscription.endDate,
+  active: subscription.active
+});
+
 const Subscriptions = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -52,20 +76,23 @@ const Subscriptions = () => {
         throw error;
       }
 
-      return data || [];
+      // Convert database format to application format
+      return (data || []).map(dbToAppSubscription);
     },
   });
 
   const createSubscriptionMutation = useMutation({
     mutationFn: async (data: Partial<Subscription>) => {
+      const dbData = appToDbSubscription(data);
+      
       const { data: newSubscription, error } = await supabase
         .from('subscriptions')
-        .insert([data])
+        .insert([dbData])
         .select()
         .single();
 
       if (error) throw error;
-      return newSubscription;
+      return dbToAppSubscription(newSubscription);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -87,15 +114,17 @@ const Subscriptions = () => {
 
   const updateSubscriptionMutation = useMutation({
     mutationFn: async (data: Partial<Subscription>) => {
+      const dbData = appToDbSubscription(data);
+      
       const { data: updatedSubscription, error } = await supabase
         .from('subscriptions')
-        .update(data)
-        .eq('id', data.id)
+        .update(dbData)
+        .eq('id', dbData.id)
         .select()
         .single();
 
       if (error) throw error;
-      return updatedSubscription;
+      return dbToAppSubscription(updatedSubscription);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
