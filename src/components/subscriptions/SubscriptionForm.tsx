@@ -24,6 +24,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { addMonths } from "date-fns";
 import { usePlans } from "@/hooks/usePlans";
+import { formatCurrency } from "@/lib/utils";
 
 const formSchema = z.object({
   id: z.string().optional(),

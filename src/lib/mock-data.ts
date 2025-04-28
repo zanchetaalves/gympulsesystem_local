@@ -4,21 +4,30 @@ import { User, Client, Subscription, Payment, Plan } from "@/types";
 // Mock data for testing purposes
 export const plans: Record<string, Plan> = {
   Mensal: {
+    id: "1",
+    name: "Plano Mensal",
     type: 'Mensal',
     priceBrl: 100,
     durationMonths: 1,
+    active: true,
     color: 'bg-blue-100 text-blue-800'
   },
   Trimestral: {
+    id: "2",
+    name: "Plano Trimestral",
     type: 'Trimestral',
     priceBrl: 270,
     durationMonths: 3,
+    active: true,
     color: 'bg-green-100 text-green-800'
   },
   Anual: {
+    id: "3",
+    name: "Plano Anual",
     type: 'Anual',
     priceBrl: 960,
     durationMonths: 12,
+    active: true,
     color: 'bg-purple-100 text-purple-800'
   }
 };
