@@ -1,8 +1,7 @@
 
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Payment } from "@/types";
+import { Payment, PlanType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 // Adapter functions para converter entre os formatos do banco e da aplicação
@@ -67,7 +66,7 @@ export const usePayments = () => {
           payment.subscription = {
             id: subscription.id,
             clientId: subscription.client_id,
-            plan: subscription.plan,
+            plan: subscription.plan as PlanType, // Fixing the type here
             startDate: new Date(subscription.start_date),
             endDate: new Date(subscription.end_date),
             active: subscription.active
