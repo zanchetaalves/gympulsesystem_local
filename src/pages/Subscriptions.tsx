@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockClients, plans } from "@/lib/mock-data";
+import { plans } from "@/lib/mock-data";
 import { formatDate, isAboutToExpire } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, BarChart2 } from "lucide-react";
@@ -22,33 +22,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { Subscription, Client } from "@/types";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-// Adapter functions to convert between database and application types
-const dbToAppSubscription = (dbSubscription: any): Subscription => ({
-  id: dbSubscription.id,
-  clientId: dbSubscription.client_id,
-  plan: dbSubscription.plan,
-  startDate: new Date(dbSubscription.start_date),
-  endDate: new Date(dbSubscription.end_date),
-  active: dbSubscription.active ?? true,
-});
-
-const appToDbSubscription = (subscription: Partial<Subscription>) => ({
-  id: subscription.id,
-  client_id: subscription.clientId,
-  plan: subscription.plan,
-  start_date: subscription.startDate instanceof Date 
-    ? subscription.startDate.toISOString() 
-    : subscription.startDate,
-  end_date: subscription.endDate instanceof Date 
-    ? subscription.endDate.toISOString() 
-    : subscription.endDate,
-  active: subscription.active
-});
+import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useClients } from "@/hooks/useClients";
 
 const Subscriptions = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -56,99 +32,34 @@ const Subscriptions = () => {
   const [selectClientDialogOpen, setSelectClientDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery({
-    queryKey: ['subscriptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar matrículas.",
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      // Convert database format to application format
-      return (data || []).map(dbToAppSubscription);
-    },
-  });
-
-  const createSubscriptionMutation = useMutation({
-    mutationFn: async (data: Partial<Subscription>) => {
-      const dbData = appToDbSubscription(data);
-      
-      const { data: newSubscription, error } = await supabase
-        .from('subscriptions')
-        .insert([dbData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppSubscription(newSubscription);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      setCreateDialogOpen(false);
-      setSelectClientDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Matrícula cadastrada com sucesso!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao cadastrar matrícula.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateSubscriptionMutation = useMutation({
-    mutationFn: async (data: Partial<Subscription>) => {
-      const dbData = appToDbSubscription(data);
-      
-      const { data: updatedSubscription, error } = await supabase
-        .from('subscriptions')
-        .update(dbData)
-        .eq('id', dbData.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppSubscription(updatedSubscription);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      setEditDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Matrícula atualizada com sucesso!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar matrícula.",
-        variant: "destructive",
-      });
-    },
-  });
+  
+  // Usando hooks personalizados
+  const { 
+    subscriptions, 
+    isLoading: isLoadingSubscriptions,
+    createSubscription,
+    updateSubscription
+  } = useSubscriptions();
+  
+  const { clients } = useClients();
 
   const handleCreateSubscription = async (data: any) => {
-    createSubscriptionMutation.mutate(data);
+    createSubscription.mutate(data, {
+      onSuccess: () => {
+        setCreateDialogOpen(false);
+        setSelectClientDialogOpen(false);
+        setSelectedClient(null);
+      }
+    });
   };
 
   const handleEditSubscription = async (data: any) => {
-    updateSubscriptionMutation.mutate(data);
+    updateSubscription.mutate(data, {
+      onSuccess: () => {
+        setEditDialogOpen(false);
+        setSelectedSubscription(null);
+      }
+    });
   };
 
   const selectClientForSubscription = (client: Client) => {
@@ -192,7 +103,7 @@ const Subscriptions = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockClients.map((client) => (
+                  {clients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell>{client.name}</TableCell>
                       <TableCell>{client.cpf}</TableCell>
@@ -220,7 +131,7 @@ const Subscriptions = () => {
             </DialogHeader>
             <SubscriptionForm 
               onSubmit={handleCreateSubscription} 
-              isLoading={isLoadingSubscriptions}
+              isLoading={createSubscription.isPending}
               selectedClientId={selectedClient?.id}
             />
           </DialogContent>
@@ -267,87 +178,101 @@ const Subscriptions = () => {
           </Button>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Data Início</TableHead>
-                <TableHead>Data Fim</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {subscriptions.map((subscription) => {
-                const client = mockClients.find(c => c.id === subscription.clientId);
-                const status = getSubscriptionStatus(subscription);
-                
-                return (
-                  <TableRow key={subscription.id}>
-                    <TableCell className="font-medium">{client?.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={plans[subscription.plan]?.color}>
-                        {subscription.plan}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(subscription.startDate)}</TableCell>
-                    <TableCell>{formatDate(subscription.endDate)}</TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        status === "active" 
-                          ? "success" 
-                          : status === "expiring" 
-                            ? "warning" 
-                            : status === "expired" 
-                              ? "destructive" 
-                              : "outline"
-                      }>
-                        {status === "active" 
-                          ? "Ativa" 
-                          : status === "expiring" 
-                            ? "A Vencer" 
-                            : status === "expired" 
-                              ? "Vencida" 
-                              : "Inativa"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Dialog 
-                        open={editDialogOpen && selectedSubscription?.id === subscription.id} 
-                        onOpenChange={(open) => {
-                          setEditDialogOpen(open);
-                          if (!open) setSelectedSubscription(null);
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => setSelectedSubscription(subscription)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Editar Matrícula</DialogTitle>
-                          </DialogHeader>
-                          {selectedSubscription && (
-                            <SubscriptionForm 
-                              onSubmit={handleEditSubscription} 
-                              isLoading={isLoadingSubscriptions} 
-                              defaultValues={selectedSubscription}
-                            />
-                          )}
-                        </DialogContent>
-                      </Dialog>
+          {isLoadingSubscriptions ? (
+            <div className="flex justify-center py-8">
+              <p>Carregando matrículas...</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Data Início</TableHead>
+                  <TableHead>Data Fim</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscriptions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-4">
+                      Nenhuma matrícula cadastrada
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ) : (
+                  subscriptions.map((subscription) => {
+                    const client = clients.find(c => c.id === subscription.clientId);
+                    const status = getSubscriptionStatus(subscription);
+                    
+                    return (
+                      <TableRow key={subscription.id}>
+                        <TableCell className="font-medium">{client?.name || "Cliente não encontrado"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={plans[subscription.plan]?.color}>
+                            {subscription.plan}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(subscription.startDate)}</TableCell>
+                        <TableCell>{formatDate(subscription.endDate)}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            status === "active" 
+                              ? "success" 
+                              : status === "expiring" 
+                                ? "warning" 
+                                : status === "expired" 
+                                  ? "destructive" 
+                                  : "outline"
+                          }>
+                            {status === "active" 
+                              ? "Ativa" 
+                              : status === "expiring" 
+                                ? "A Vencer" 
+                                : status === "expired" 
+                                  ? "Vencida" 
+                                  : "Inativa"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Dialog 
+                            open={editDialogOpen && selectedSubscription?.id === subscription.id} 
+                            onOpenChange={(open) => {
+                              setEditDialogOpen(open);
+                              if (!open) setSelectedSubscription(null);
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setSelectedSubscription(subscription)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Editar Matrícula</DialogTitle>
+                              </DialogHeader>
+                              {selectedSubscription && (
+                                <SubscriptionForm 
+                                  onSubmit={handleEditSubscription} 
+                                  isLoading={updateSubscription.isPending} 
+                                  defaultValues={selectedSubscription}
+                                />
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -31,171 +31,52 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-// Adapter functions para converter entre os formatos do banco e da aplicação
-const dbToAppUser = (dbUser: any): User => ({
-  id: dbUser.id,
-  name: dbUser.name,
-  email: dbUser.email,
-  profile: dbUser.profile,
-  active: dbUser.active ?? true,
-  createdAt: new Date(dbUser.created_at),
-});
-
-const appToDbUser = (user: Partial<User>) => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  profile: user.profile,
-  active: user.active,
-  created_at: user.createdAt instanceof Date 
-    ? user.createdAt.toISOString()
-    : user.createdAt,
-});
+import { useUsers } from "@/hooks/useUsers";
 
 const Users = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Buscar usuários do Supabase
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar usuários: " + error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      // Converter do formato do banco para o formato da aplicação
-      return (data || []).map(dbToAppUser);
-    },
-  });
-
-  // Mutation para criar usuário
-  const createUserMutation = useMutation({
-    mutationFn: async (data: Partial<User>) => {
-      const dbData = appToDbUser(data);
-      
-      const { data: newUser, error } = await supabase
-        .from('users')
-        .insert([dbData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppUser(newUser);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setCreateDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Usuário criado com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao criar usuário: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutation para atualizar usuário
-  const updateUserMutation = useMutation({
-    mutationFn: async (data: Partial<User>) => {
-      const dbData = appToDbUser(data);
-      
-      const { data: updatedUser, error } = await supabase
-        .from('users')
-        .update(dbData)
-        .eq('id', dbData.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppUser(updatedUser);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setEditDialogOpen(false);
-      setSelectedUser(null);
-      toast({
-        title: "Sucesso",
-        description: "Usuário atualizado com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar usuário: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutation para excluir usuário
-  const deleteUserMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setDeleteDialogOpen(false);
-      setSelectedUser(null);
-      toast({
-        title: "Sucesso",
-        description: "Usuário excluído com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir usuário: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  
+  // Usando o hook personalizado para gerenciar os usuários
+  const { 
+    users, 
+    isLoading: isLoadingUsers,
+    createUser,
+    updateUser,
+    deleteUser
+  } = useUsers();
 
   const handleCreateUser = async (data: any) => {
-    createUserMutation.mutate({
+    createUser.mutate({
       ...data,
       createdAt: new Date(),
+    }, {
+      onSuccess: () => {
+        setCreateDialogOpen(false);
+      }
     });
   };
 
   const handleEditUser = async (data: any) => {
-    updateUserMutation.mutate(data);
+    updateUser.mutate(data, {
+      onSuccess: () => {
+        setEditDialogOpen(false);
+        setSelectedUser(null);
+      }
+    });
   };
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    deleteUserMutation.mutate(selectedUser.id);
+    deleteUser.mutate(selectedUser.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setSelectedUser(null);
+      }
+    });
   };
 
   return (
@@ -215,7 +96,7 @@ const Users = () => {
             </DialogHeader>
             <UserForm 
               onSubmit={handleCreateUser} 
-              isLoading={createUserMutation.isPending} 
+              isLoading={createUser.isPending} 
             />
           </DialogContent>
         </Dialog>
@@ -292,7 +173,7 @@ const Users = () => {
                             {selectedUser && (
                               <UserForm 
                                 onSubmit={handleEditUser} 
-                                isLoading={updateUserMutation.isPending} 
+                                isLoading={updateUser.isPending} 
                                 defaultValues={selectedUser}
                               />
                             )}
@@ -327,10 +208,10 @@ const Users = () => {
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={handleDeleteUser}
-                                disabled={deleteUserMutation.isPending}
+                                disabled={deleteUser.isPending}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                {deleteUserMutation.isPending ? "Excluindo..." : "Excluir"}
+                                {deleteUser.isPending ? "Excluindo..." : "Excluir"}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

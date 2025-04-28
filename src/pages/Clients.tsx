@@ -11,10 +11,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { mockClients } from "@/lib/mock-data";
 import { formatDate, formatCPF, formatPhone, calculateAge } from "@/lib/utils";
 import { Plus, Search, Edit, Trash2 } from "lucide-react";
-import { mockSubscriptions } from "@/lib/mock-data";
 import { ClientForm } from "@/components/clients/ClientForm";
 import {
   Dialog,
@@ -33,18 +31,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
 import { Client } from "@/types";
+import { useClients } from "@/hooks/useClients";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
 
 const Clients = () => {
-  const [clients, setClients] = useState(mockClients);
   const [searchTerm, setSearchTerm] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const { toast } = useToast();
+  
+  // Usando hooks personalizados
+  const { 
+    clients, 
+    isLoading: isLoadingClients,
+    createClient,
+    updateClient,
+    deleteClient
+  } = useClients();
+  
+  const { subscriptions } = useSubscriptions();
 
   const filteredClients = clients.filter(
     (client) =>
@@ -54,87 +61,40 @@ const Clients = () => {
   );
 
   const getClientSubscriptionStatus = (clientId: string) => {
-    const subscription = mockSubscriptions.find(
+    const subscription = subscriptions.find(
       (sub) => sub.clientId === clientId && sub.active
     );
     return subscription ? "Ativo" : "Inativo";
   };
 
   const handleCreateClient = async (data: any) => {
-    setIsLoading(true);
-    try {
-      // Simulando uma chamada de API
-      const newClient = {
-        ...data,
-        id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date(),
-      };
-      
-      setClients([newClient, ...clients]);
-      setCreateDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Cliente cadastrado com sucesso!",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao cadastrar cliente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    createClient.mutate({
+      ...data,
+      createdAt: new Date(),
+    }, {
+      onSuccess: () => {
+        setCreateDialogOpen(false);
+      }
+    });
   };
 
   const handleEditClient = async (data: any) => {
-    setIsLoading(true);
-    try {
-      const updatedClients = clients.map(client => 
-        client.id === data.id ? { ...client, ...data } : client
-      );
-      
-      setClients(updatedClients);
-      setEditDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Cliente atualizado com sucesso!",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar cliente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setSelectedClient(null);
-    }
+    updateClient.mutate(data, {
+      onSuccess: () => {
+        setEditDialogOpen(false);
+        setSelectedClient(null);
+      }
+    });
   };
 
   const handleDeleteClient = async () => {
-    setIsLoading(true);
-    try {
-      if (!selectedClient) return;
-      
-      const filteredClients = clients.filter(client => client.id !== selectedClient.id);
-      setClients(filteredClients);
-      
-      toast({
-        title: "Sucesso",
-        description: "Cliente excluído com sucesso!",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir cliente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setDeleteDialogOpen(false);
-      setSelectedClient(null);
-    }
+    if (!selectedClient) return;
+    deleteClient.mutate(selectedClient.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setSelectedClient(null);
+      }
+    });
   };
 
   return (
@@ -152,7 +112,7 @@ const Clients = () => {
             <DialogHeader>
               <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
             </DialogHeader>
-            <ClientForm onSubmit={handleCreateClient} isLoading={isLoading} />
+            <ClientForm onSubmit={handleCreateClient} isLoading={createClient.isPending} />
           </DialogContent>
         </Dialog>
       </div>
@@ -182,110 +142,124 @@ const Clients = () => {
           <CardTitle>Lista de Clientes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CPF</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Idade</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Criado em</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.name}</TableCell>
-                    <TableCell>{formatCPF(client.cpf)}</TableCell>
-                    <TableCell>{formatPhone(client.phone)}</TableCell>
-                    <TableCell>{client.email || "-"}</TableCell>
-                    <TableCell>{calculateAge(client.birthDate)} anos</TableCell>
-                    <TableCell>
-                      <div
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          getClientSubscriptionStatus(client.id) === "Ativo"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {getClientSubscriptionStatus(client.id)}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(client.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <Dialog open={editDialogOpen && selectedClient?.id === client.id} onOpenChange={(open) => {
-                        setEditDialogOpen(open);
-                        if (!open) setSelectedClient(null);
-                      }}>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => setSelectedClient(client)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Editar Cliente</DialogTitle>
-                          </DialogHeader>
-                          {selectedClient && (
-                            <ClientForm 
-                              onSubmit={handleEditClient} 
-                              isLoading={isLoading} 
-                              defaultValues={selectedClient}
-                            />
-                          )}
-                        </DialogContent>
-                      </Dialog>
-
-                      <AlertDialog 
-                        open={deleteDialogOpen && selectedClient?.id === client.id}
-                        onOpenChange={(open) => {
-                          setDeleteDialogOpen(open);
-                          if (!open) setSelectedClient(null);
-                        }}
-                      >
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => {
-                            setSelectedClient(client);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. O cliente será permanentemente excluído.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={handleDeleteClient}
-                              disabled={isLoading}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              {isLoading ? "Excluindo..." : "Excluir"}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
+          {isLoadingClients ? (
+            <div className="flex justify-center py-8">
+              <p>Carregando clientes...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Idade</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criado em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredClients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-4">
+                        Nenhum cliente cadastrado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredClients.map((client) => (
+                      <TableRow key={client.id}>
+                        <TableCell className="font-medium">{client.name}</TableCell>
+                        <TableCell>{formatCPF(client.cpf)}</TableCell>
+                        <TableCell>{formatPhone(client.phone)}</TableCell>
+                        <TableCell>{client.email || "-"}</TableCell>
+                        <TableCell>{calculateAge(client.birthDate)} anos</TableCell>
+                        <TableCell>
+                          <div
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              getClientSubscriptionStatus(client.id) === "Ativo"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {getClientSubscriptionStatus(client.id)}
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatDate(client.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Dialog open={editDialogOpen && selectedClient?.id === client.id} onOpenChange={(open) => {
+                            setEditDialogOpen(open);
+                            if (!open) setSelectedClient(null);
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setSelectedClient(client)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Editar Cliente</DialogTitle>
+                              </DialogHeader>
+                              {selectedClient && (
+                                <ClientForm 
+                                  onSubmit={handleEditClient} 
+                                  isLoading={updateClient.isPending} 
+                                  defaultValues={selectedClient}
+                                />
+                              )}
+                            </DialogContent>
+                          </Dialog>
+
+                          <AlertDialog 
+                            open={deleteDialogOpen && selectedClient?.id === client.id}
+                            onOpenChange={(open) => {
+                              setDeleteDialogOpen(open);
+                              if (!open) setSelectedClient(null);
+                            }}
+                          >
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => {
+                                setSelectedClient(client);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita. O cliente será permanentemente excluído.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={handleDeleteClient}
+                                  disabled={deleteClient.isPending}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteClient.isPending ? "Excluindo..." : "Excluir"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
