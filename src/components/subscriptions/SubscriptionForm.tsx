@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Subscription, Client, PlanType } from "@/types";
-import { mockClients, plans } from "@/lib/mock-data";
 import {
   Form,
   FormControl,
@@ -24,6 +24,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { addMonths } from "date-fns";
 import { usePlans } from "@/hooks/usePlans";
+import { useClients } from "@/hooks/useClients";
 import { formatCurrency } from "@/lib/utils";
 
 const formSchema = z.object({
@@ -55,9 +56,9 @@ export function SubscriptionForm({
   defaultValues,
   selectedClientId 
 }: SubscriptionFormProps) {
-  const [clients] = useState<Client[]>(mockClients);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const { plans } = usePlans();
+  const { clients } = useClients();
   const activePlans = plans.filter(p => p.active);
   
   const formattedDefaultValues = {

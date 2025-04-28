@@ -1,20 +1,26 @@
 
 import { CardMetric } from "@/components/ui/card-metric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockClients, mockSubscriptions, mockPayments } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
 import { BarChart2, Calendar, CreditCard, User } from "lucide-react";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useClients } from "@/hooks/useClients";
+import { usePayments } from "@/hooks/usePayments";
 
 const Dashboard = () => {
+  const { subscriptions } = useSubscriptions();
+  const { clients } = useClients();
+  const { payments } = usePayments();
+
   // Calculate metrics
-  const totalClients = mockClients.length;
-  const activeSubscriptions = mockSubscriptions.filter(sub => sub.active).length;
+  const totalClients = clients.length;
+  const activeSubscriptions = subscriptions.filter(sub => sub.active).length;
   
-  const totalRevenue = mockPayments
+  const totalRevenue = payments
     .filter(payment => payment.confirmed)
     .reduce((total, payment) => total + payment.amount, 0);
     
-  const expiringSubscriptions = mockSubscriptions
+  const expiringSubscriptions = subscriptions
     .filter(sub => {
       const now = new Date();
       const endDate = new Date(sub.endDate);
@@ -62,7 +68,7 @@ const Dashboard = () => {
             {expiringSubscriptions.length > 0 ? (
               <div className="space-y-4">
                 {expiringSubscriptions.map(subscription => {
-                  const client = mockClients.find(c => c.id === subscription.clientId);
+                  const client = clients.find(c => c.id === subscription.clientId);
                   const endDate = new Date(subscription.endDate);
                   const now = new Date();
                   const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -95,8 +101,8 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockPayments.slice(0, 5).map(payment => {
-                const client = mockClients.find(c => c.id === payment.subscription?.clientId);
+              {payments.slice(0, 5).map(payment => {
+                const client = clients.find(c => c.id === payment.subscription?.clientId);
                 
                 return (
                   <div key={payment.id} className="flex justify-between items-center p-4 border rounded-md">
