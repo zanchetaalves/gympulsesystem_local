@@ -80,6 +80,42 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          duration_months: number
+          id: string
+          name: string
+          price_brl: number
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_months: number
+          id?: string
+          name: string
+          price_brl: number
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_months?: number
+          id?: string
+          name?: string
+          price_brl?: number
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           active: boolean | null
@@ -88,6 +124,7 @@ export type Database = {
           end_date: string
           id: string
           plan: string
+          plan_id: string | null
           start_date: string
         }
         Insert: {
@@ -97,6 +134,7 @@ export type Database = {
           end_date: string
           id?: string
           plan: string
+          plan_id?: string | null
           start_date: string
         }
         Update: {
@@ -106,6 +144,7 @@ export type Database = {
           end_date?: string
           id?: string
           plan?: string
+          plan_id?: string | null
           start_date?: string
         }
         Relationships: [
@@ -114,6 +153,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]

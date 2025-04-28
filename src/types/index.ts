@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -43,8 +42,12 @@ export interface Payment {
 export type PlanType = 'Mensal' | 'Trimestral' | 'Anual';
 
 export interface Plan {
+  id: string;
+  name: string;
   type: PlanType;
   priceBrl: number;
+  description?: string;
   durationMonths: number;
+  active: boolean;
   color: string;
 }

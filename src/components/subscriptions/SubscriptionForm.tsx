@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { addMonths } from "date-fns";
+import { usePlans } from "@/hooks/usePlans";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -53,8 +54,10 @@ export function SubscriptionForm({
   defaultValues,
   selectedClientId 
 }: SubscriptionFormProps) {
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const [clients] = useState<Client[]>(mockClients);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const { plans } = usePlans();
+  const activePlans = plans.filter(p => p.active);
   
   const formattedDefaultValues = {
     ...defaultValues,
@@ -151,9 +154,11 @@ export function SubscriptionForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Mensal">Mensal</SelectItem>
-                  <SelectItem value="Trimestral">Trimestral</SelectItem>
-                  <SelectItem value="Anual">Anual</SelectItem>
+                  {activePlans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.type}>
+                      {plan.name} - {formatCurrency(plan.priceBrl)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Plans from "./pages/Plans";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +83,16 @@ const App = () => (
                 <PrivateRoute>
                   <MainLayout>
                     <Reports />
+                  </MainLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/planos"
+              element={
+                <PrivateRoute>
+                  <MainLayout>
+                    <Plans />
                   </MainLayout>
                 </PrivateRoute>
               }
