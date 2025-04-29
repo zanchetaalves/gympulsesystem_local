@@ -16,13 +16,12 @@ export const dbToAppUser = (dbUser: any): User => ({
 });
 
 export const appToDbUser = (user: Partial<User>) => ({
-  id: user.id,
   name: user.name,
   email: user.email,
   profile: user.profile,
   active: user.active,
-  created_at: user.createdAt instanceof Date 
-    ? user.createdAt.toISOString() 
+  created_at: user.createdAt instanceof Date
+    ? user.createdAt.toISOString()
     : user.createdAt,
 });
 
@@ -31,10 +30,10 @@ export const useUsers = () => {
   const queryClient = useQueryClient();
 
   // Query para buscar usuários
-  const { 
-    data: users = [], 
-    isLoading, 
-    error 
+  const {
+    data: users = [],
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
@@ -60,7 +59,7 @@ export const useUsers = () => {
   const createUser = useMutation({
     mutationFn: async (data: Partial<User>) => {
       const dbData = appToDbUser(data);
-      
+
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([dbData])
@@ -89,8 +88,11 @@ export const useUsers = () => {
   // Mutation para atualizar usuário
   const updateUser = useMutation({
     mutationFn: async (data: Partial<User>) => {
-      const dbData = appToDbUser(data);
-      
+      const dbData = {
+        ...appToDbUser(data),
+        id: data.id
+      };
+
       const { data: updatedUser, error } = await supabase
         .from('users')
         .update(dbData)

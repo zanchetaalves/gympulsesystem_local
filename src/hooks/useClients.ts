@@ -17,16 +17,15 @@ export const dbToAppClient = (dbClient: any): Client => ({
 });
 
 export const appToDbClient = (client: Partial<Client>) => ({
-  id: client.id,
   name: client.name,
   cpf: client.cpf,
   email: client.email,
   phone: client.phone,
   address: client.address,
-  birth_date: client.birthDate instanceof Date 
+  birth_date: client.birthDate instanceof Date
     ? client.birthDate.toISOString().split('T')[0]
     : client.birthDate,
-  created_at: client.createdAt instanceof Date 
+  created_at: client.createdAt instanceof Date
     ? client.createdAt.toISOString()
     : client.createdAt,
 });
@@ -36,10 +35,10 @@ export const useClients = () => {
   const queryClient = useQueryClient();
 
   // Query para buscar clientes
-  const { 
-    data: clients = [], 
-    isLoading, 
-    error 
+  const {
+    data: clients = [],
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -65,7 +64,7 @@ export const useClients = () => {
   const createClient = useMutation({
     mutationFn: async (data: Partial<Client>) => {
       const dbData = appToDbClient(data);
-      
+
       const { data: newClient, error } = await supabase
         .from('clients')
         .insert([dbData])
@@ -94,8 +93,11 @@ export const useClients = () => {
   // Mutation para atualizar cliente
   const updateClient = useMutation({
     mutationFn: async (data: Partial<Client>) => {
-      const dbData = appToDbClient(data);
-      
+      const dbData = {
+        ...appToDbClient(data),
+        id: data.id
+      };
+
       const { data: updatedClient, error } = await supabase
         .from('clients')
         .update(dbData)

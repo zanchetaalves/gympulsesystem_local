@@ -15,14 +15,13 @@ export const dbToAppSubscription = (dbSubscription: any): Subscription => ({
 });
 
 export const appToDbSubscription = (subscription: Partial<Subscription>) => ({
-  id: subscription.id,
   client_id: subscription.clientId,
   plan: subscription.plan,
-  start_date: subscription.startDate instanceof Date 
-    ? subscription.startDate.toISOString().split('T')[0] 
+  start_date: subscription.startDate instanceof Date
+    ? subscription.startDate.toISOString().split('T')[0]
     : subscription.startDate,
-  end_date: subscription.endDate instanceof Date 
-    ? subscription.endDate.toISOString().split('T')[0] 
+  end_date: subscription.endDate instanceof Date
+    ? subscription.endDate.toISOString().split('T')[0]
     : subscription.endDate,
   active: subscription.active
 });
@@ -32,10 +31,10 @@ export const useSubscriptions = () => {
   const queryClient = useQueryClient();
 
   // Query para buscar matrículas
-  const { 
-    data: subscriptions = [], 
-    isLoading, 
-    error 
+  const {
+    data: subscriptions = [],
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['subscriptions'],
     queryFn: async () => {
@@ -61,7 +60,7 @@ export const useSubscriptions = () => {
   const createSubscription = useMutation({
     mutationFn: async (data: Partial<Subscription>) => {
       const dbData = appToDbSubscription(data);
-      
+
       const { data: newSubscription, error } = await supabase
         .from('subscriptions')
         .insert([dbData])
@@ -90,8 +89,11 @@ export const useSubscriptions = () => {
   // Mutation para atualizar matrícula
   const updateSubscription = useMutation({
     mutationFn: async (data: Partial<Subscription>) => {
-      const dbData = appToDbSubscription(data);
-      
+      const dbData = {
+        ...appToDbSubscription(data),
+        id: data.id
+      };
+
       const { data: updatedSubscription, error } = await supabase
         .from('subscriptions')
         .update(dbData)

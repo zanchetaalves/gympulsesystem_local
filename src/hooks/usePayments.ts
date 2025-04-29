@@ -15,10 +15,9 @@ export const dbToAppPayment = (dbPayment: any): Payment => ({
 });
 
 export const appToDbPayment = (payment: Partial<Payment>) => ({
-  id: payment.id,
   subscription_id: payment.subscriptionId,
-  payment_date: payment.paymentDate instanceof Date 
-    ? payment.paymentDate.toISOString().split('T')[0] 
+  payment_date: payment.paymentDate instanceof Date
+    ? payment.paymentDate.toISOString().split('T')[0]
     : payment.paymentDate,
   amount: payment.amount,
   payment_method: payment.paymentMethod,
@@ -30,10 +29,10 @@ export const usePayments = () => {
   const queryClient = useQueryClient();
 
   // Query para buscar pagamentos
-  const { 
-    data: payments = [], 
-    isLoading, 
-    error 
+  const {
+    data: payments = [],
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
@@ -59,7 +58,7 @@ export const usePayments = () => {
 
       return (data || []).map((dbPayment) => {
         const payment = dbToAppPayment(dbPayment);
-        
+
         // Adicionar dados do cliente e matrícula para exibição
         if (dbPayment.subscriptions) {
           const subscription = dbPayment.subscriptions;
@@ -71,7 +70,7 @@ export const usePayments = () => {
             endDate: new Date(subscription.end_date),
             active: subscription.active
           };
-          
+
           if (subscription.clients) {
             payment.client = {
               id: subscription.clients.id,
@@ -85,7 +84,7 @@ export const usePayments = () => {
             };
           }
         }
-        
+
         return payment;
       });
     },
@@ -95,7 +94,7 @@ export const usePayments = () => {
   const createPayment = useMutation({
     mutationFn: async (data: Partial<Payment>) => {
       const dbData = appToDbPayment(data);
-      
+
       const { data: newPayment, error } = await supabase
         .from('payments')
         .insert([dbData])
@@ -124,8 +123,11 @@ export const usePayments = () => {
   // Mutation para atualizar pagamento
   const updatePayment = useMutation({
     mutationFn: async (data: Partial<Payment>) => {
-      const dbData = appToDbPayment(data);
-      
+      const dbData = {
+        ...appToDbPayment(data),
+        id: data.id
+      };
+
       const { data: updatedPayment, error } = await supabase
         .from('payments')
         .update(dbData)
