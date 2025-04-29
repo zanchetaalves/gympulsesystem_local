@@ -17,7 +17,8 @@ import {
   FileText, 
   CreditCard, 
   BarChart2, 
-  Calendar
+  Calendar,
+  LayoutList
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -47,6 +48,11 @@ export function AppSidebar() {
       title: "Pagamentos",
       icon: CreditCard,
       url: "/pagamentos",
+    },
+    {
+      title: "Planos",
+      icon: LayoutList,
+      url: "/planos",
     },
     {
       title: "Relatórios",
