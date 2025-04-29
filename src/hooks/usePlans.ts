@@ -17,7 +17,6 @@ export const dbToAppPlan = (dbPlan: any): Plan => ({
 });
 
 export const appToDbPlan = (plan: Partial<Plan>) => ({
-  id: plan.id,
   name: plan.name,
   type: plan.type,
   price_brl: plan.priceBrl,
@@ -103,7 +102,11 @@ export const usePlans = () => {
   // Mutation para atualizar plano
   const updatePlan = useMutation({
     mutationFn: async (data: Partial<Plan>) => {
-      const dbData = appToDbPlan(data);
+      // Para atualizações, precisamos manter o ID
+      const dbData = {
+        ...appToDbPlan(data),
+        id: data.id
+      };
       
       const { data: updatedPlan, error } = await supabase
         .from('plans')
