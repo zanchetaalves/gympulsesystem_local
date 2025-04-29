@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -18,10 +18,14 @@ import {
   CreditCard, 
   BarChart2, 
   Calendar,
-  LayoutList
+  LayoutList,
+  LogOut
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function AppSidebar() {
+  const navigate = useNavigate();
   // Menu items
   const menuItems = [
     {
@@ -61,6 +65,16 @@ export function AppSidebar() {
     },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logout realizado com sucesso");
+      navigate("/auth");
+    } catch (error) {
+      toast.error("Erro ao fazer logout");
+    }
+  };
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-4 flex items-center space-x-2">
@@ -90,8 +104,17 @@ export function AppSidebar() {
       </SidebarContent>
       
       <SidebarFooter className="p-4 border-t">
-        <div className="text-sm text-gray-500">
-          GymPulse System v1.0
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-gray-500">
+            GymPulse System v1.0
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center text-red-500 hover:bg-red-50 rounded-md px-2 py-1.5 transition-colors text-sm"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sair</span>
+          </button>
         </div>
       </SidebarFooter>
     </Sidebar>

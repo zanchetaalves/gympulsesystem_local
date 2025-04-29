@@ -43,7 +43,6 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Corrigido para usar email/password explicitamente
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -64,10 +63,17 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-[350px]">
-        <CardHeader>
-          <CardTitle>Academia System</CardTitle>
+    <div 
+      className="min-h-screen flex items-center justify-center bg-cover bg-center" 
+      style={{ 
+        backgroundImage: "url('https://images.unsplash.com/photo-1571733515746-c58a186b1d2e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
+        backgroundSize: "cover"
+      }}
+    >
+      <div className="absolute inset-0 bg-black opacity-50"></div>
+      <Card className="w-[350px] z-10 border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">GymPulse</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4">
@@ -78,6 +84,7 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="bg-white/70"
               />
               <Input
                 type="password"
@@ -85,12 +92,13 @@ export default function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="bg-white/70"
               />
             </div>
             <div className="space-y-2">
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-gym-primary hover:bg-gym-secondary" 
                 disabled={isLoading}
               >
                 {isLoading ? "Carregando..." : "Entrar"}
@@ -98,7 +106,7 @@ export default function Auth() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className="w-full border-gym-primary text-gym-primary hover:bg-gym-light hover:text-gym-primary"
                 onClick={handleSignUp}
                 disabled={isLoading}
               >
