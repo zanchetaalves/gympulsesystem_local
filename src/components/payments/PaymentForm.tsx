@@ -50,9 +50,10 @@ interface PaymentFormProps {
   onSubmit: (data: any) => void;
   isLoading?: boolean;
   defaultValues?: Partial<Payment>;
+  selectedSubscriptionId?: string; // Added this property
 }
 
-export function PaymentForm({ onSubmit, isLoading, defaultValues }: PaymentFormProps) {
+export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscriptionId }: PaymentFormProps) {
   const { subscriptions } = useSubscriptions();
   const { clients } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -62,7 +63,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues }: PaymentFormP
     payment_date: defaultValues?.paymentDate 
       ? new Date(defaultValues.paymentDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
-    subscription_id: defaultValues?.subscription?.id || "",
+    subscription_id: selectedSubscriptionId || defaultValues?.subscription?.id || "",
     amount: defaultValues?.amount || 0,
     payment_method: defaultValues?.paymentMethod || "pix",
     confirmed: defaultValues?.confirmed || false,
@@ -87,6 +88,19 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues }: PaymentFormP
       }
     }
   }, [form.watch("subscription_id"), subscriptions]);
+
+  // Set the subscription ID when selectedSubscriptionId changes
+  useEffect(() => {
+    if (selectedSubscriptionId) {
+      form.setValue("subscription_id", selectedSubscriptionId);
+      
+      // Update the client ID as well
+      const subscription = subscriptions.find(sub => sub.id === selectedSubscriptionId);
+      if (subscription) {
+        setSelectedClientId(subscription.clientId);
+      }
+    }
+  }, [selectedSubscriptionId, subscriptions, form]);
 
   const handleSubmit = (data: PaymentFormData) => {
     const subscription = subscriptions.find(sub => sub.id === data.subscription_id);

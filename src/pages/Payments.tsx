@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -81,6 +80,7 @@ const Payments = () => {
     setCreateDialogOpen(true);
   };
 
+  // Fix the PaymentForm rendering section
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
