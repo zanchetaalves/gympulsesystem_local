@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, isAboutToExpire } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, BarChart2 } from "lucide-react";
+import { Plus, Edit, BarChart2, Search } from "lucide-react";
 import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Subscription, Client } from "@/types";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useClients } from "@/hooks/useClients";
@@ -32,6 +33,7 @@ const Subscriptions = () => {
   const [selectClientDialogOpen, setSelectClientDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
   
   // Using hooks to fetch data from Supabase
   const { 
@@ -82,6 +84,11 @@ const Subscriptions = () => {
   // Get active plans
   const activePlans = plans.filter(p => p.active);
 
+  // Filter clients based on search query
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+  );
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -97,6 +104,17 @@ const Subscriptions = () => {
             <DialogHeader>
               <DialogTitle>Selecionar Cliente para Matrícula</DialogTitle>
             </DialogHeader>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar cliente por nome..."
+                  value={clientSearchQuery}
+                  onChange={(e) => setClientSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
             <div className="overflow-y-auto max-h-96">
               <Table>
                 <TableHeader>
@@ -107,21 +125,29 @@ const Subscriptions = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clients.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell>{client.name}</TableCell>
-                      <TableCell>{client.cpf}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          onClick={() => selectClientForSubscription(client)}
-                        >
-                          Selecionar
-                        </Button>
+                  {filteredClients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-4">
+                        Nenhum cliente encontrado
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredClients.map((client) => (
+                      <TableRow key={client.id}>
+                        <TableCell>{client.name}</TableCell>
+                        <TableCell>{client.cpf}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            onClick={() => selectClientForSubscription(client)}
+                          >
+                            Selecionar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

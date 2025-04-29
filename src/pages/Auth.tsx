@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -64,10 +64,14 @@ export default function Auth() {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center" 
+      className="min-h-screen flex items-center justify-center"
       style={{ 
         backgroundImage: "url('https://images.unsplash.com/photo-1571733515746-c58a186b1d2e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
-        backgroundSize: "cover"
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        width: "100vw",
+        height: "100vh"
       }}
     >
       <div className="absolute inset-0 bg-black opacity-50"></div>

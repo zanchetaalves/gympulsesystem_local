@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Table,
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, BarChart2 } from "lucide-react";
+import { Plus, Check, BarChart2, Search } from "lucide-react";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 import {
   Dialog,
@@ -30,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import { Payment, Subscription } from "@/types";
 import { usePayments } from "@/hooks/usePayments";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -40,6 +42,7 @@ const Payments = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [subscriptionSearchQuery, setSubscriptionSearchQuery] = useState("");
   
   // Usando hooks personalizados
   const { 
@@ -80,7 +83,14 @@ const Payments = () => {
     setCreateDialogOpen(true);
   };
 
-  // Fix the PaymentForm rendering section
+  // Filter subscriptions based on client name search query
+  const filteredSubscriptions = subscriptions
+    .filter(sub => sub.active)
+    .filter(sub => {
+      const clientName = sub.client?.name || "";
+      return clientName.toLowerCase().includes(subscriptionSearchQuery.toLowerCase());
+    });
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -96,6 +106,17 @@ const Payments = () => {
             <DialogHeader>
               <DialogTitle>Selecionar Matrícula para Pagamento</DialogTitle>
             </DialogHeader>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar por nome do cliente..."
+                  value={subscriptionSearchQuery}
+                  onChange={(e) => setSubscriptionSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
             <div className="overflow-y-auto max-h-96">
               <Table>
                 <TableHeader>
@@ -106,9 +127,14 @@ const Payments = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subscriptions
-                    .filter(sub => sub.active)
-                    .map((subscription) => (
+                  {filteredSubscriptions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-4">
+                        Nenhuma matrícula encontrada
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSubscriptions.map((subscription) => (
                       <TableRow key={subscription.id}>
                         <TableCell>
                           {subscription.client?.name || "Cliente não encontrado"}
@@ -124,7 +150,8 @@ const Payments = () => {
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
