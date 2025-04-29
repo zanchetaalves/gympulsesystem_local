@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -84,7 +84,7 @@ export function SubscriptionForm({
     if (planType && startDateString) {
       try {
         const startDate = new Date(startDateString);
-        const planInfo = plans[planType];
+        const planInfo = plans.find(p => p.type === planType);
         if (planInfo) {
           const calculatedEndDate = addMonths(startDate, planInfo.durationMonths);
           setEndDate(calculatedEndDate);
@@ -95,7 +95,7 @@ export function SubscriptionForm({
     } else {
       setEndDate(null);
     }
-  }, [form.watch("plan"), form.watch("startDate")]);
+  }, [form.watch("plan"), form.watch("startDate"), plans]);
 
   const handleSubmit = (data: SubscriptionFormData) => {
     if (!endDate) return;

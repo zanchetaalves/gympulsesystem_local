@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { plans } from "@/lib/mock-data";
 import { formatDate, isAboutToExpire } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, BarChart2 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
 import { Subscription, Client } from "@/types";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useClients } from "@/hooks/useClients";
+import { usePlans } from "@/hooks/usePlans";
 
 const Subscriptions = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -33,7 +33,7 @@ const Subscriptions = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
-  // Usando hooks personalizados
+  // Using hooks to fetch data from Supabase
   const { 
     subscriptions, 
     isLoading: isLoadingSubscriptions,
@@ -42,6 +42,7 @@ const Subscriptions = () => {
   } = useSubscriptions();
   
   const { clients } = useClients();
+  const { plans } = usePlans();
 
   const handleCreateSubscription = async (data: any) => {
     createSubscription.mutate(data, {
@@ -77,6 +78,9 @@ const Subscriptions = () => {
     if (isAboutToExpire(endDate)) return "expiring";
     return "active";
   };
+
+  // Get active plans
+  const activePlans = plans.filter(p => p.active);
 
   return (
     <div className="animate-fade-in">
@@ -139,8 +143,8 @@ const Subscriptions = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {Object.values(plans).map((plan) => (
-          <Card key={plan.type} className="overflow-hidden">
+        {activePlans.map((plan) => (
+          <Card key={plan.id} className="overflow-hidden">
             <CardHeader className={`${plan.color} py-3`}>
               <CardTitle className="text-center">{plan.type}</CardTitle>
             </CardHeader>
@@ -205,12 +209,13 @@ const Subscriptions = () => {
                   subscriptions.map((subscription) => {
                     const client = clients.find(c => c.id === subscription.clientId);
                     const status = getSubscriptionStatus(subscription);
+                    const planColor = plans.find(p => p.type === subscription.plan)?.color || '';
                     
                     return (
                       <TableRow key={subscription.id}>
                         <TableCell className="font-medium">{client?.name || "Cliente não encontrado"}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={plans[subscription.plan]?.color}>
+                          <Badge variant="outline" className={planColor}>
                             {subscription.plan}
                           </Badge>
                         </TableCell>
