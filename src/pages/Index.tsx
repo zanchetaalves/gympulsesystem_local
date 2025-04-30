@@ -28,9 +28,9 @@ const Index = () => {
         return;
       }
       
-      // Chamar função que vai atualizar as configurações de rede no projeto
-      // Adding proper typing for the RPC function call - it doesn't expect any parameters
-      const { data, error } = await supabase.rpc('allow_all_ips_db_access', {});
+      // Fix: Use a type assertion to tell TypeScript about the correct parameter type
+      // The empty object is the correct way to call this function with no parameters
+      const { data, error } = await supabase.rpc('allow_all_ips_db_access' as any, {});
       
       if (error) {
         console.error("Erro ao configurar acesso:", error);
