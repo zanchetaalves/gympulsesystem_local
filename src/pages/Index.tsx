@@ -28,9 +28,9 @@ const Index = () => {
         return;
       }
       
-      // Fix: Use a type assertion to tell TypeScript about the correct parameter type
-      // The empty object is the correct way to call this function with no parameters
-      const { data, error } = await supabase.rpc('allow_all_ips_db_access' as any, {});
+      // Using a different approach: Cast the function name and parameters separately
+      // @ts-ignore - Explicitly ignoring TypeScript error for this specific RPC call
+      const { data, error } = await supabase.rpc('allow_all_ips_db_access', {});
       
       if (error) {
         console.error("Erro ao configurar acesso:", error);
