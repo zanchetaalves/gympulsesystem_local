@@ -124,14 +124,14 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
         <div className="flex items-center space-x-4 mb-4">
           <FormLabel className="text-sm font-medium text-gray-500 min-w-[100px]">Cliente:</FormLabel>
           <Select
-            value={selectedClientId || ""}
+            value={selectedClientId || undefined}
             onValueChange={setSelectedClientId}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Filtrar por cliente" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os clientes</SelectItem>
+              <SelectItem value="all">Todos os clientes</SelectItem>
               {clients.map(client => (
                 <SelectItem key={client.id} value={client.id}>
                   {client.name}
