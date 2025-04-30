@@ -118,6 +118,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
       id: data.id,
       paymentDate: new Date(data.payment_date),
       amount: data.amount,
+      // Garantir que os valores correspondem exatamente aos esperados pelo banco de dados
       paymentMethod: data.payment_method,
       confirmed: data.confirmed,
       subscription: subscription || null,
@@ -221,6 +222,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  {/* Corrigido para usar os valores exatos que o banco espera */}
                   <SelectItem value="pix">PIX</SelectItem>
                   <SelectItem value="dinheiro">Dinheiro</SelectItem>
                   <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>

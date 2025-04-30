@@ -93,6 +93,9 @@ export const usePayments = () => {
   // Mutation para criar pagamento
   const createPayment = useMutation({
     mutationFn: async (data: Partial<Payment>) => {
+      console.log("Dados enviados para criação:", data);
+      console.log("Dados formatados para DB:", appToDbPayment(data));
+      
       const dbData = appToDbPayment(data);
 
       const { data: newPayment, error } = await supabase
@@ -101,7 +104,10 @@ export const usePayments = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar pagamento:", error);
+        throw error;
+      }
       return dbToAppPayment(newPayment);
     },
     onSuccess: () => {

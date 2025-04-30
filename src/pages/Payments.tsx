@@ -59,6 +59,7 @@ const Payments = () => {
       onSuccess: () => {
         setCreateDialogOpen(false);
         setSelectSubscriptionDialogOpen(false);
+        setSelectedSubscription(null);
       }
     });
   };
