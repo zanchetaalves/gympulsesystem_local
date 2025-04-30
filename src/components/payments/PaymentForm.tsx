@@ -74,10 +74,19 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     defaultValues: formattedDefaultValues,
   });
 
+  // Enriquecendo as subscriptions com dados do cliente
+  const enrichedSubscriptions = subscriptions.map(subscription => {
+    const client = clients.find(client => client.id === subscription.clientId);
+    return {
+      ...subscription,
+      clientName: client ? client.name : "Cliente não encontrado"
+    };
+  });
+
   // Filter subscriptions by selected client
   const clientSubscriptions = selectedClientId 
-    ? subscriptions.filter(sub => sub.clientId === selectedClientId) 
-    : subscriptions;
+    ? enrichedSubscriptions.filter(sub => sub.clientId === selectedClientId) 
+    : enrichedSubscriptions;
 
   useEffect(() => {
     const subscription_id = form.watch("subscription_id");
@@ -112,7 +121,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
       paymentMethod: data.payment_method,
       confirmed: data.confirmed,
       subscription: subscription || null,
-      subscription_id: data.subscription_id,
+      subscriptionId: data.subscription_id,
     };
     
     onSubmit(formattedData);
@@ -154,14 +163,11 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {clientSubscriptions.map((subscription) => {
-                    const client = clients.find(c => c.id === subscription.clientId);
-                    return (
-                      <SelectItem key={subscription.id} value={subscription.id}>
-                        {client?.name} - {subscription.plan}
-                      </SelectItem>
-                    );
-                  })}
+                  {clientSubscriptions.map((subscription) => (
+                    <SelectItem key={subscription.id} value={subscription.id}>
+                      {subscription.clientName} - {subscription.plan}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
