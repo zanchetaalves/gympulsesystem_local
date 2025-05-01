@@ -38,7 +38,7 @@ const formSchema = z.object({
   }).min(0, {
     message: "Valor deve ser maior que zero",
   }),
-  payment_method: z.string({
+  payment_method: z.enum(["pix", "dinheiro", "cartao_debito", "cartao_credito", "boleto", "transferencia"], {
     required_error: "Método de pagamento é obrigatório",
   }),
   confirmed: z.boolean().default(false),
@@ -50,13 +50,22 @@ interface PaymentFormProps {
   onSubmit: (data: any) => void;
   isLoading?: boolean;
   defaultValues?: Partial<Payment>;
-  selectedSubscriptionId?: string; // Added this property
+  selectedSubscriptionId?: string;
 }
 
 export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscriptionId }: PaymentFormProps) {
   const { subscriptions } = useSubscriptions();
   const { clients } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  
+  // Create enriched subscriptions with client data
+  const enrichedSubscriptions = subscriptions.map(subscription => {
+    const client = clients.find(client => client.id === subscription.clientId);
+    return {
+      ...subscription,
+      clientName: client ? client.name : "Cliente não encontrado"
+    };
+  });
   
   const formattedDefaultValues = {
     ...defaultValues,
@@ -72,15 +81,6 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: formattedDefaultValues,
-  });
-
-  // Enriquecendo as subscriptions com dados do cliente
-  const enrichedSubscriptions = subscriptions.map(subscription => {
-    const client = clients.find(client => client.id === subscription.clientId);
-    return {
-      ...subscription,
-      clientName: client ? client.name : "Cliente não encontrado"
-    };
   });
 
   // Filter subscriptions by selected client
@@ -112,19 +112,20 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
   }, [selectedSubscriptionId, subscriptions, form]);
 
   const handleSubmit = (data: PaymentFormData) => {
+    console.log("Form data submitted:", data);
     const subscription = subscriptions.find(sub => sub.id === data.subscription_id);
     
     const formattedData = {
       id: data.id,
       paymentDate: new Date(data.payment_date),
       amount: data.amount,
-      // Garantir que os valores correspondem exatamente aos esperados pelo banco de dados
       paymentMethod: data.payment_method,
       confirmed: data.confirmed,
       subscription: subscription || null,
       subscriptionId: data.subscription_id,
     };
     
+    console.log("Formatted data:", formattedData);
     onSubmit(formattedData);
   };
 
@@ -222,7 +223,6 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {/* Corrigido para usar os valores exatos que o banco espera */}
                   <SelectItem value="pix">PIX</SelectItem>
                   <SelectItem value="dinheiro">Dinheiro</SelectItem>
                   <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>

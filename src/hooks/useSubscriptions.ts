@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Subscription } from "@/types";
@@ -40,7 +39,10 @@ export const useSubscriptions = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('*')
+        .select(`
+          *,
+          clients:client_id (*)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -52,7 +54,25 @@ export const useSubscriptions = () => {
         throw error;
       }
 
-      return (data || []).map(dbToAppSubscription);
+      return (data || []).map(dbSubscription => {
+        const subscription = dbToAppSubscription(dbSubscription);
+        
+        // Add client data if available
+        if (dbSubscription.clients) {
+          subscription.client = {
+            id: dbSubscription.clients.id,
+            name: dbSubscription.clients.name,
+            cpf: dbSubscription.clients.cpf,
+            email: dbSubscription.clients.email,
+            phone: dbSubscription.clients.phone,
+            address: dbSubscription.clients.address,
+            birthDate: new Date(dbSubscription.clients.birth_date),
+            createdAt: new Date(dbSubscription.clients.created_at)
+          };
+        }
+        
+        return subscription;
+      });
     },
   });
 

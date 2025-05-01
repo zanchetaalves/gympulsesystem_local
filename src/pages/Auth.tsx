@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,17 +61,12 @@ export default function Auth() {
     setIsLoading(false);
   }
 
+  const backgroundImageUrl = "https://images.unsplash.com/photo-1571733515746-c58a186b1d2e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80";
+
   return (
     <div 
-      className="min-h-screen flex items-center justify-center"
-      style={{ 
-        backgroundImage: "url('https://images.unsplash.com/photo-1571733515746-c58a186b1d2e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        width: "100vw",
-        height: "100vh"
-      }}
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${backgroundImageUrl})` }}
     >
       <div className="absolute inset-0 bg-black opacity-50"></div>
       <Card className="w-[350px] z-10 border-0 shadow-xl bg-white/90 backdrop-blur-sm">

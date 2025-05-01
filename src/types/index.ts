@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -33,7 +34,7 @@ export interface Payment {
   subscriptionId: string;
   paymentDate: Date;
   amount: number;
-  paymentMethod: 'Cartão' | 'Dinheiro' | 'Pix' | 'Outro';
+  paymentMethod: 'pix' | 'dinheiro' | 'cartao_debito' | 'cartao_credito' | 'boleto' | 'transferencia';
   confirmed: boolean;
   subscription?: Subscription; // For joined data
   client?: Client; // For joined data

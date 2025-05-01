@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Payment, Subscription } from "@/types";
 import { usePayments } from "@/hooks/usePayments";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useClients } from "@/hooks/useClients";
 
 const Payments = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -53,6 +54,16 @@ const Payments = () => {
   } = usePayments();
   
   const { subscriptions } = useSubscriptions();
+  const { clients } = useClients();
+
+  // Enrich subscriptions with client data
+  const enrichedSubscriptions = subscriptions.map(subscription => {
+    const client = clients.find(c => c.id === subscription.clientId);
+    return {
+      ...subscription,
+      client: client || null
+    };
+  });
 
   const handleCreatePayment = async (data: any) => {
     createPayment.mutate(data, {
@@ -85,7 +96,7 @@ const Payments = () => {
   };
 
   // Filter subscriptions based on client name search query
-  const filteredSubscriptions = subscriptions
+  const filteredSubscriptions = enrichedSubscriptions
     .filter(sub => sub.active)
     .filter(sub => {
       const clientName = sub.client?.name || "";
