@@ -66,7 +66,7 @@ export default function Auth() {
     <div 
       className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
       style={{ 
-        backgroundImage: "url('https://images.unsplash.com/photo-1571733515746-c58a186b1d2e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')"
+        backgroundImage: "url('https://dicasef.com.br/wp-content/uploads/2024/07/muai-yhay-1.jpg')"
       }}
     >
       <div className="absolute inset-0 bg-black opacity-50"></div>
