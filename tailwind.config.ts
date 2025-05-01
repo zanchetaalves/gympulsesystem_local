@@ -64,11 +64,11 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				gym: {
-					primary: "#0284c7",
-					secondary: "#0369a1",
-					accent: "#16a34a",
-					light: "#f0f9ff",
-					dark: "#0c4a6e",
+					primary: 'hsl(var(--gym-primary))',
+					secondary: 'hsl(var(--gym-secondary))',
+					accent: 'hsl(var(--gym-accent))',
+					light: 'hsl(var(--gym-light))',
+					dark: 'hsl(var(--gym-dark))',
 				},
 			},
 			borderRadius: {
