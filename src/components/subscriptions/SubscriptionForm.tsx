@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,7 +71,7 @@ export function SubscriptionForm({
     const year = dateObj.getFullYear();
     const month = dateObj.getMonth();
     const day = dateObj.getDate();
-    return new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
+    return new Date(Date.UTC(year, month, day, 4, 0, 0)).toISOString().split('T')[0];
   };
   
   const formattedDefaultValues = {
@@ -118,11 +119,11 @@ export function SubscriptionForm({
     // Try to parse the date
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
     if (isValid(parsedDate)) {
-      // Usar UTC para preservar o dia exato
+      // Usar UTC-4 para preservar o dia exato
       const year = parsedDate.getFullYear();
       const month = parsedDate.getMonth();
       const day = parsedDate.getDate();
-      const utcDate = new Date(Date.UTC(year, month, day));
+      const utcDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
       form.setValue("startDate", utcDate.toISOString().split('T')[0]);
     }
   };
@@ -135,13 +136,13 @@ export function SubscriptionForm({
     const year = startDate.getFullYear();
     const month = startDate.getMonth();
     const day = startDate.getDate();
-    const utcStartDate = new Date(Date.UTC(year, month, day));
+    const utcStartDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
     
     // Garantir que a data final também não sofra ajuste de fuso horário
     const endYear = endDate.getFullYear();
     const endMonth = endDate.getMonth();
     const endDay = endDate.getDate();
-    const utcEndDate = new Date(Date.UTC(endYear, endMonth, endDay));
+    const utcEndDate = new Date(Date.UTC(endYear, endMonth, endDay, 4, 0, 0));
     
     const formattedData = {
       ...data,

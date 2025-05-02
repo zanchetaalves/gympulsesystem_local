@@ -59,10 +59,11 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
     if (isValid(parsedDate)) {
       // Criar a data usando UTC para evitar problemas de fuso horário
+      // Ajustando para UTC-4 (adicionando 4 horas ao UTC padrão)
       const year = parsedDate.getFullYear();
       const month = parsedDate.getMonth();
       const day = parsedDate.getDate();
-      const utcDate = new Date(Date.UTC(year, month, day));
+      const utcDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
       form.setValue("birthDate", utcDate);
     }
   };
@@ -73,8 +74,8 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
       const year = data.birthDate.getFullYear();
       const month = data.birthDate.getMonth();
       const day = data.birthDate.getDate();
-      // Usar UTC para garantir que o dia seja mantido
-      data.birthDate = new Date(Date.UTC(year, month, day));
+      // Usar UTC-4 para garantir que o dia seja mantido (adicionar 4 horas ao UTC padrão)
+      data.birthDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
     }
     onSubmit(data);
   };

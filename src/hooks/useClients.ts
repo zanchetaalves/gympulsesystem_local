@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types";
@@ -16,19 +15,32 @@ export const dbToAppClient = (dbClient: any): Client => ({
   createdAt: new Date(dbClient.created_at),
 });
 
-export const appToDbClient = (client: Partial<Client>) => ({
-  name: client.name,
-  cpf: client.cpf,
-  email: client.email,
-  phone: client.phone,
-  address: client.address,
-  birth_date: client.birthDate instanceof Date
-    ? client.birthDate.toISOString().split('T')[0]
-    : client.birthDate,
-  created_at: client.createdAt instanceof Date
-    ? client.createdAt.toISOString()
-    : client.createdAt,
-});
+export const appToDbClient = (client: Partial<Client>) => {
+  // Ajusta o fuso horário para UTC-4 para evitar problemas de data
+  let birthDateIso = null;
+  if (client.birthDate) {
+    if (client.birthDate instanceof Date) {
+      const year = client.birthDate.getFullYear();
+      const month = client.birthDate.getMonth();
+      const day = client.birthDate.getDate();
+      birthDateIso = new Date(Date.UTC(year, month, day, 4, 0, 0)).toISOString().split('T')[0];
+    } else {
+      birthDateIso = client.birthDate;
+    }
+  }
+
+  return {
+    name: client.name,
+    cpf: client.cpf,
+    email: client.email,
+    phone: client.phone,
+    address: client.address,
+    birth_date: birthDateIso,
+    created_at: client.createdAt instanceof Date
+      ? client.createdAt.toISOString()
+      : client.createdAt,
+  };
+};
 
 export const useClients = () => {
   const { toast } = useToast();

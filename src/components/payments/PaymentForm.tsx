@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -68,7 +69,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     const year = dateObj.getFullYear();
     const month = dateObj.getMonth();
     const day = dateObj.getDate();
-    return new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
+    return new Date(Date.UTC(year, month, day, 4, 0, 0)).toISOString().split('T')[0];
   };
   
   // Create enriched subscriptions with client data
@@ -131,11 +132,11 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     // Try to parse the date
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
     if (isValid(parsedDate)) {
-      // Usar UTC para preservar o dia exato
+      // Usar UTC-4 para preservar o dia exato
       const year = parsedDate.getFullYear();
       const month = parsedDate.getMonth();
       const day = parsedDate.getDate();
-      const utcDate = new Date(Date.UTC(year, month, day));
+      const utcDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
       form.setValue("payment_date", utcDate.toISOString().split('T')[0]);
     }
   };
@@ -149,7 +150,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     const year = paymentDate.getFullYear();
     const month = paymentDate.getMonth();
     const day = paymentDate.getDate();
-    const utcPaymentDate = new Date(Date.UTC(year, month, day));
+    const utcPaymentDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
     
     const formattedData = {
       id: data.id,
