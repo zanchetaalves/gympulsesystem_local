@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -45,6 +45,10 @@ interface ClientFormProps {
 }
 
 export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormProps) {
+  const [dateInputValue, setDateInputValue] = useState(
+    defaultValues?.birthDate ? format(new Date(defaultValues.birthDate), "dd/MM/yyyy") : ""
+  );
+
   const form = useForm<ClientFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,6 +58,17 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
       birthDate: defaultValues?.birthDate ? new Date(defaultValues.birthDate) : undefined,
     },
   });
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDateInputValue(value);
+    
+    // Tenta converter a string para um objeto Date
+    const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+    if (isValid(parsedDate)) {
+      form.setValue("birthDate", parsedDate);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -139,38 +154,51 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Data de Nascimento</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "dd/MM/yyyy")
-                      ) : (
-                        <span>Selecione uma data</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex flex-col space-y-2">
+                <Input
+                  placeholder="DD/MM/AAAA"
+                  value={dateInputValue}
+                  onChange={handleDateChange}
+                  className="mb-1"
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "dd/MM/yyyy")
+                        ) : (
+                          <span>Selecione uma data</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        if (date) {
+                          setDateInputValue(format(date, "dd/MM/yyyy"));
+                        }
+                      }}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               <FormMessage />
             </FormItem>
           )}

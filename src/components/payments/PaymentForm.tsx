@@ -24,6 +24,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useClients } from "@/hooks/useClients";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { format, parse, isValid } from "date-fns";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -57,6 +58,11 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
   const { subscriptions } = useSubscriptions();
   const { clients } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [paymentDateInput, setPaymentDateInput] = useState(
+    defaultValues?.paymentDate 
+      ? format(new Date(defaultValues.paymentDate), "dd/MM/yyyy")
+      : format(new Date(), "dd/MM/yyyy")
+  );
   
   // Create enriched subscriptions with client data
   const enrichedSubscriptions = subscriptions.map(subscription => {
@@ -110,6 +116,17 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
       }
     }
   }, [selectedSubscriptionId, subscriptions, form]);
+
+  const handlePaymentDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPaymentDateInput(value);
+    
+    // Try to parse the date
+    const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+    if (isValid(parsedDate)) {
+      form.setValue("payment_date", parsedDate.toISOString().split('T')[0]);
+    }
+  };
 
   const handleSubmit = (data: PaymentFormData) => {
     console.log("Form data submitted:", data);
@@ -184,7 +201,11 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
             <FormItem>
               <FormLabel>Data de Pagamento</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input 
+                  placeholder="DD/MM/AAAA" 
+                  value={paymentDateInput} 
+                  onChange={handlePaymentDateChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

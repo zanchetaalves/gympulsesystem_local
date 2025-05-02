@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addMonths } from "date-fns";
+import { addMonths, format, parse, isValid } from "date-fns";
 import { usePlans } from "@/hooks/usePlans";
 import { useClients } from "@/hooks/useClients";
 import { formatCurrency } from "@/lib/utils";
@@ -57,6 +57,11 @@ export function SubscriptionForm({
   selectedClientId 
 }: SubscriptionFormProps) {
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDateInput, setStartDateInput] = useState(
+    defaultValues?.startDate 
+      ? format(new Date(defaultValues.startDate), "dd/MM/yyyy")
+      : format(new Date(), "dd/MM/yyyy")
+  );
   const { plans } = usePlans();
   const { clients } = useClients();
   const activePlans = plans.filter(p => p.active);
@@ -96,6 +101,17 @@ export function SubscriptionForm({
       setEndDate(null);
     }
   }, [form.watch("plan"), form.watch("startDate"), plans]);
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setStartDateInput(value);
+    
+    // Try to parse the date
+    const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+    if (isValid(parsedDate)) {
+      form.setValue("startDate", parsedDate.toISOString().split('T')[0]);
+    }
+  };
 
   const handleSubmit = (data: SubscriptionFormData) => {
     if (!endDate) return;
@@ -175,7 +191,11 @@ export function SubscriptionForm({
             <FormItem>
               <FormLabel>Data de Início</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input 
+                  placeholder="DD/MM/AAAA" 
+                  value={startDateInput} 
+                  onChange={handleStartDateChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -185,8 +205,8 @@ export function SubscriptionForm({
         <div className="mb-4">
           <FormLabel>Data de Término</FormLabel>
           <Input 
-            type="date" 
-            value={endDate ? endDate.toISOString().split('T')[0] : ''} 
+            type="text" 
+            value={endDate ? format(endDate, "dd/MM/yyyy") : ''} 
             disabled 
           />
           <p className="text-sm text-muted-foreground mt-1">
