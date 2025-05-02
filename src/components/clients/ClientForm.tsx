@@ -14,15 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon } from "lucide-react";
 import { format, parse, isValid } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -152,53 +144,16 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
           control={form.control}
           name="birthDate"
           render={({ field }) => (
-            <FormItem className="flex flex-col">
+            <FormItem>
               <FormLabel>Data de Nascimento</FormLabel>
-              <div className="flex flex-col space-y-2">
+              <FormControl>
                 <Input
                   placeholder="DD/MM/AAAA"
                   value={dateInputValue}
                   onChange={handleDateChange}
                   className="mb-1"
                 />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "dd/MM/yyyy")
-                        ) : (
-                          <span>Selecione uma data</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={(date) => {
-                        field.onChange(date);
-                        if (date) {
-                          setDateInputValue(format(date, "dd/MM/yyyy"));
-                        }
-                      }}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
