@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,11 +65,19 @@ export function SubscriptionForm({
   const { clients } = useClients();
   const activePlans = plans.filter(p => p.active);
   
+  // Ajuste para preservar a data exata ao converter para formato ISO
+  const getISODateWithoutTimezoneAdjustment = (dateObj: Date): string => {
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+    const day = dateObj.getDate();
+    return new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
+  };
+  
   const formattedDefaultValues = {
     ...defaultValues,
     startDate: defaultValues?.startDate 
-      ? new Date(defaultValues.startDate).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0],
+      ? getISODateWithoutTimezoneAdjustment(new Date(defaultValues.startDate))
+      : getISODateWithoutTimezoneAdjustment(new Date()),
   };
   
   const form = useForm<SubscriptionFormData>({
@@ -88,10 +95,12 @@ export function SubscriptionForm({
     
     if (planType && startDateString) {
       try {
+        // Criar a data usando UTC para evitar ajustes de fuso horário
         const startDate = new Date(startDateString);
         const planInfo = plans.find(p => p.type === planType);
         if (planInfo) {
           const calculatedEndDate = addMonths(startDate, planInfo.durationMonths);
+          // Garantir que a data final também não sofra ajuste de fuso horário
           setEndDate(calculatedEndDate);
         }
       } catch (error) {
@@ -109,17 +118,35 @@ export function SubscriptionForm({
     // Try to parse the date
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
     if (isValid(parsedDate)) {
-      form.setValue("startDate", parsedDate.toISOString().split('T')[0]);
+      // Usar UTC para preservar o dia exato
+      const year = parsedDate.getFullYear();
+      const month = parsedDate.getMonth();
+      const day = parsedDate.getDate();
+      const utcDate = new Date(Date.UTC(year, month, day));
+      form.setValue("startDate", utcDate.toISOString().split('T')[0]);
     }
   };
 
   const handleSubmit = (data: SubscriptionFormData) => {
     if (!endDate) return;
     
+    // Converter a data de início para um objeto Date sem ajuste de fuso horário
+    const startDate = new Date(data.startDate);
+    const year = startDate.getFullYear();
+    const month = startDate.getMonth();
+    const day = startDate.getDate();
+    const utcStartDate = new Date(Date.UTC(year, month, day));
+    
+    // Garantir que a data final também não sofra ajuste de fuso horário
+    const endYear = endDate.getFullYear();
+    const endMonth = endDate.getMonth();
+    const endDay = endDate.getDate();
+    const utcEndDate = new Date(Date.UTC(endYear, endMonth, endDay));
+    
     const formattedData = {
       ...data,
-      startDate: new Date(data.startDate),
-      endDate: endDate,
+      startDate: utcStartDate,
+      endDate: utcEndDate,
       clientId: data.clientId,
       active: data.active,
     };

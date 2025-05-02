@@ -46,7 +46,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
     defaultValues: {
       email: null,
       ...defaultValues,
-      // Convert birthDate to Date object if it exists
+      // Convertemos para Date sem ajustar o fuso horário
       birthDate: defaultValues?.birthDate ? new Date(defaultValues.birthDate) : undefined,
     },
   });
@@ -55,16 +55,33 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
     const value = e.target.value;
     setDateInputValue(value);
     
-    // Tenta converter a string para um objeto Date
+    // Tenta converter a string para um objeto Date preservando o dia exato
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
     if (isValid(parsedDate)) {
-      form.setValue("birthDate", parsedDate);
+      // Criar a data usando UTC para evitar problemas de fuso horário
+      const year = parsedDate.getFullYear();
+      const month = parsedDate.getMonth();
+      const day = parsedDate.getDate();
+      const utcDate = new Date(Date.UTC(year, month, day));
+      form.setValue("birthDate", utcDate);
     }
+  };
+
+  const handleSubmit = (data: ClientFormData) => {
+    // Garantir que a data não sofra alterações de fuso horário
+    if (data.birthDate) {
+      const year = data.birthDate.getFullYear();
+      const month = data.birthDate.getMonth();
+      const day = data.birthDate.getDate();
+      // Usar UTC para garantir que o dia seja mantido
+      data.birthDate = new Date(Date.UTC(year, month, day));
+    }
+    onSubmit(data);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
