@@ -19,13 +19,16 @@ import {
   BarChart2, 
   Calendar,
   LayoutList,
-  LogOut
+  LogOut,
+  Database
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function AppSidebar() {
   const navigate = useNavigate();
+  const [isDownloading, setIsDownloading] = useState(false);
+  
   // Menu items
   const menuItems = [
     {
@@ -75,6 +78,49 @@ export function AppSidebar() {
     }
   };
 
+  const handleDownloadBackup = async () => {
+    try {
+      setIsDownloading(true);
+      // Get the current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Você precisa estar autenticado para baixar o backup");
+        navigate("/auth");
+        return;
+      }
+      
+      // Call the function with authorization header containing the access token
+      const { data, error } = await supabase.functions.invoke("generate-backup", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Create a blob and download it
+      const blob = new Blob([data], { type: 'application/sql' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gympulse_backup_${new Date().toISOString().split('T')[0]}.sql`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success("Backup baixado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao baixar o backup:", error);
+      toast.error("Erro ao baixar o backup");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-4 flex items-center space-x-2">
@@ -105,6 +151,15 @@ export function AppSidebar() {
       
       <SidebarFooter className="p-4 border-t">
         <div className="flex flex-col gap-4">
+          <button 
+            onClick={handleDownloadBackup}
+            className="flex items-center text-blue-500 hover:bg-blue-50 rounded-md px-2 py-1.5 transition-colors text-sm"
+            disabled={isDownloading}
+          >
+            <Database className="mr-2 h-4 w-4" />
+            <span>{isDownloading ? "Baixando..." : "Baixar Backup"}</span>
+          </button>
+          
           <div className="text-sm text-gray-500">
             GymPulse System v1.0
           </div>
