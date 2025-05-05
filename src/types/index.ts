@@ -17,6 +17,7 @@ export interface Client {
   address: string;
   birthDate: Date;
   createdAt: Date;
+  photoUrl?: string | null;
 }
 
 export interface Subscription {

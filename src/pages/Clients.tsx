@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCPF, formatPhone, calculateAge } from "@/lib/utils";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Camera } from "lucide-react";
 import { ClientForm } from "@/components/clients/ClientForm";
 import {
   Dialog,
@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Client } from "@/types";
 import { useClients } from "@/hooks/useClients";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -97,6 +98,16 @@ const Clients = () => {
     });
   };
 
+  // Function to get initials from name
+  const getInitials = (name: string): string => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -108,7 +119,7 @@ const Clients = () => {
               Novo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
             </DialogHeader>
@@ -151,6 +162,7 @@ const Clients = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Foto</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>CPF</TableHead>
                     <TableHead>Telefone</TableHead>
@@ -164,13 +176,19 @@ const Clients = () => {
                 <TableBody>
                   {filteredClients.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-4">
+                      <TableCell colSpan={9} className="text-center py-4">
                         Nenhum cliente cadastrado
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredClients.map((client) => (
                       <TableRow key={client.id}>
+                        <TableCell>
+                          <Avatar>
+                            <AvatarImage src={client.photoUrl || undefined} />
+                            <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
                         <TableCell className="font-medium">{client.name}</TableCell>
                         <TableCell>{formatCPF(client.cpf)}</TableCell>
                         <TableCell>{formatPhone(client.phone)}</TableCell>
@@ -202,7 +220,7 @@ const Clients = () => {
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-4xl">
                               <DialogHeader>
                                 <DialogTitle>Editar Cliente</DialogTitle>
                               </DialogHeader>

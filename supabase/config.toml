@@ -1,1 +1,11 @@
+
 project_id = "rmvrrrqlqrmtiiwxugfe"
+
+[functions]
+
+[[auth.redirect_urls]]
+url = "http://localhost:5173/auth/callback"
+
+[[storage.buckets]]
+name = "client-photos"
+public = true

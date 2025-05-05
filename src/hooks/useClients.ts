@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types";
@@ -14,6 +13,7 @@ export const dbToAppClient = (dbClient: any): Client => ({
   address: dbClient.address,
   birthDate: dbClient.birth_date ? new Date(dbClient.birth_date) : new Date(),
   createdAt: new Date(dbClient.created_at),
+  photoUrl: dbClient.photo_url || null,
 });
 
 export const appToDbClient = (client: Partial<Client>) => {
@@ -39,6 +39,7 @@ export const appToDbClient = (client: Partial<Client>) => {
     phone: client.phone,
     address: client.address,
     birth_date: birthDateStr,
+    photo_url: client.photoUrl,
     created_at: client.createdAt instanceof Date
       ? client.createdAt.toISOString()
       : client.createdAt,
@@ -78,7 +79,47 @@ export const useClients = () => {
   // Mutation para criar cliente
   const createClient = useMutation({
     mutationFn: async (data: Partial<Client>) => {
-      const dbData = appToDbClient(data);
+      // Handle photo data if it exists (data URL format)
+      let photoUrl = null;
+      
+      if (data.photoUrl && data.photoUrl.startsWith('data:image')) {
+        try {
+          // Convert base64 to blob
+          const res = await fetch(data.photoUrl);
+          const blob = await res.blob();
+          
+          // Generate a unique filename
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+          const filePath = `${fileName}.jpg`;
+          
+          // Upload to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('client-photos')
+            .upload(filePath, blob, {
+              contentType: 'image/jpeg',
+            });
+          
+          if (uploadError) throw uploadError;
+          
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('client-photos')
+            .getPublicUrl(filePath);
+            
+          photoUrl = urlData.publicUrl;
+        } catch (error: any) {
+          console.error("Error uploading photo:", error);
+          // Continue without the photo if there's an error
+        }
+      } else if (data.photoUrl) {
+        // If it's already a URL, keep it
+        photoUrl = data.photoUrl;
+      }
+      
+      const dbData = appToDbClient({
+        ...data,
+        photoUrl
+      });
 
       const { data: newClient, error } = await supabase
         .from('clients')
@@ -108,8 +149,45 @@ export const useClients = () => {
   // Mutation para atualizar cliente
   const updateClient = useMutation({
     mutationFn: async (data: Partial<Client>) => {
+      // Handle photo data if it exists and has changed (data URL format)
+      let photoUrl = data.photoUrl;
+      
+      if (data.photoUrl && data.photoUrl.startsWith('data:image')) {
+        try {
+          // Convert base64 to blob
+          const res = await fetch(data.photoUrl);
+          const blob = await res.blob();
+          
+          // Generate a unique filename
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+          const filePath = `${fileName}.jpg`;
+          
+          // Upload to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('client-photos')
+            .upload(filePath, blob, {
+              contentType: 'image/jpeg',
+            });
+          
+          if (uploadError) throw uploadError;
+          
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('client-photos')
+            .getPublicUrl(filePath);
+            
+          photoUrl = urlData.publicUrl;
+        } catch (error: any) {
+          console.error("Error uploading photo:", error);
+          // Continue with the old photo if there's an error
+        }
+      }
+      
       const dbData = {
-        ...appToDbClient(data),
+        ...appToDbClient({
+          ...data,
+          photoUrl
+        }),
         id: data.id
       };
 
