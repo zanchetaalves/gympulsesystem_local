@@ -9,3 +9,6 @@ url = "http://localhost:5173/auth/callback"
 [[storage.buckets]]
 name = "client-photos"
 public = true
+
+[functions.generate-backup]
+verify_jwt = true
