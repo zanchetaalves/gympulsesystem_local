@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,12 +63,12 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
       : format(new Date(), "dd/MM/yyyy")
   );
   
-  // Função para preservar a data exata
-  const getISODateWithoutTimezoneAdjustment = (dateObj: Date): string => {
+  // Simplify date formatting to preserve the exact date
+  const getISODateString = (dateObj: Date): string => {
     const year = dateObj.getFullYear();
-    const month = dateObj.getMonth();
-    const day = dateObj.getDate();
-    return new Date(Date.UTC(year, month, day, 4, 0, 0)).toISOString().split('T')[0];
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
   
   // Create enriched subscriptions with client data
@@ -84,8 +83,8 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
   const formattedDefaultValues = {
     ...defaultValues,
     payment_date: defaultValues?.paymentDate 
-      ? getISODateWithoutTimezoneAdjustment(new Date(defaultValues.paymentDate))
-      : getISODateWithoutTimezoneAdjustment(new Date()),
+      ? getISODateString(new Date(defaultValues.paymentDate))
+      : getISODateString(new Date()),
     subscription_id: selectedSubscriptionId || defaultValues?.subscription?.id || "",
     amount: defaultValues?.amount || 0,
     payment_method: defaultValues?.paymentMethod || "pix",
@@ -129,15 +128,13 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     const value = e.target.value;
     setPaymentDateInput(value);
     
-    // Try to parse the date
+    // Parse the date using date-fns
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+    
     if (isValid(parsedDate)) {
-      // Usar UTC-4 para preservar o dia exato
-      const year = parsedDate.getFullYear();
-      const month = parsedDate.getMonth();
-      const day = parsedDate.getDate();
-      const utcDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
-      form.setValue("payment_date", utcDate.toISOString().split('T')[0]);
+      // Use the exact date as a string in YYYY-MM-DD format
+      const formattedDate = getISODateString(parsedDate);
+      form.setValue("payment_date", formattedDate);
     }
   };
 
@@ -145,16 +142,13 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     console.log("Form data submitted:", data);
     const subscription = subscriptions.find(sub => sub.id === data.subscription_id);
     
-    // Converter a data de pagamento para um objeto Date sem ajuste de fuso horário
-    const paymentDate = new Date(data.payment_date);
-    const year = paymentDate.getFullYear();
-    const month = paymentDate.getMonth();
-    const day = paymentDate.getDate();
-    const utcPaymentDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
+    // Convert payment_date string to Date object without timezone adjustments
+    const paymentDateParts = data.payment_date.split('-').map(Number);
+    const paymentDate = new Date(paymentDateParts[0], paymentDateParts[1] - 1, paymentDateParts[2]);
     
     const formattedData = {
       id: data.id,
-      paymentDate: utcPaymentDate,
+      paymentDate: paymentDate,
       amount: data.amount,
       paymentMethod: data.payment_method,
       confirmed: data.confirmed,

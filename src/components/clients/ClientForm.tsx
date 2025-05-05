@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,7 +45,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
     defaultValues: {
       email: null,
       ...defaultValues,
-      // Convertemos para Date sem ajustar o fuso horário
+      // Use the date directly without any timezone adjustments
       birthDate: defaultValues?.birthDate ? new Date(defaultValues.birthDate) : undefined,
     },
   });
@@ -55,28 +54,17 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
     const value = e.target.value;
     setDateInputValue(value);
     
-    // Tenta converter a string para um objeto Date preservando o dia exato
+    // Parse the date using date-fns
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+    
     if (isValid(parsedDate)) {
-      // Criar a data usando UTC para evitar problemas de fuso horário
-      // Ajustando para UTC-4 (adicionando 4 horas ao UTC padrão)
-      const year = parsedDate.getFullYear();
-      const month = parsedDate.getMonth();
-      const day = parsedDate.getDate();
-      const utcDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
-      form.setValue("birthDate", utcDate);
+      // Use the exact date from the input without timezone adjustments
+      form.setValue("birthDate", parsedDate);
     }
   };
 
   const handleSubmit = (data: ClientFormData) => {
-    // Garantir que a data não sofra alterações de fuso horário
-    if (data.birthDate) {
-      const year = data.birthDate.getFullYear();
-      const month = data.birthDate.getMonth();
-      const day = data.birthDate.getDate();
-      // Usar UTC-4 para garantir que o dia seja mantido (adicionar 4 horas ao UTC padrão)
-      data.birthDate = new Date(Date.UTC(year, month, day, 4, 0, 0));
-    }
+    // Pass the data directly without any additional timezone adjustments
     onSubmit(data);
   };
 
