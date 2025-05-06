@@ -23,26 +23,32 @@ serve(async (req: Request) => {
   try {
     console.log("Starting backup generation...");
     
-    // Check if the helper functions exist by trying to call them
-    const { data: schemasCheck, error: schemasCheckError } = await supabaseAdmin.rpc('get_schemas_info');
+    // First, check if the helper functions are accessible
+    // Test each function separately to identify which one might be causing problems
     
-    if (schemasCheckError) {
-      console.error("Error checking helper functions:", schemasCheckError.message);
+    // Test get_schemas_info
+    try {
+      console.log("Testing get_schemas_info function...");
+      const { data: schemaTest, error: schemaError } = await supabaseAdmin
+        .rpc('get_schemas_info');
       
-      if (schemasCheckError.message.includes("Could not find the function")) {
-        return new Response(JSON.stringify({ 
-          error: "Helper functions not found in the database. Please run the migration file 20250506_add_backup_helper_functions.sql first.",
-          details: "The migrations in supabase/migrations/ need to be applied to the database before using this function."
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (schemaError) {
+        console.error("Error with get_schemas_info:", schemaError.message);
+        throw new Error(`Helper function get_schemas_info error: ${schemaError.message}`);
       }
-      
-      throw schemasCheckError;
+      console.log("get_schemas_info function works correctly");
+    } catch (funcError) {
+      console.error("Test of get_schemas_info failed:", funcError.message);
+      return new Response(JSON.stringify({ 
+        error: "Error with helper function get_schemas_info",
+        details: "Please ensure the migration that creates the helper functions was applied correctly."
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     
-    // Get schemas and tables information
+    // Get schemas and tables information once we've verified the function works
     const { data: schemas, error: schemasError } = await supabaseAdmin.rpc('get_schemas_info');
     
     if (schemasError) {
@@ -333,9 +339,10 @@ serve(async (req: Request) => {
     
     // Try to get Row Level Security (RLS) policies if the helper functions exist
     try {
+      console.log("Attempting to get RLS policies...");
       const { data: policies, error: policiesError } = await supabaseAdmin.from('_rls_policies').select('*');
       
-      if (!policiesError && policies) {
+      if (!policiesError && policies && policies.length > 0) {
         sqlScript += `-- Row Level Security (RLS) Policies\n`;
         for (const policy of policies) {
           sqlScript += `ALTER TABLE ${policy.schema_name}.${policy.table_name} ENABLE ROW LEVEL SECURITY;\n`;
@@ -349,9 +356,11 @@ serve(async (req: Request) => {
           sqlScript += `${policyDefinition}\n`;
         }
         sqlScript += `\n`;
+      } else {
+        console.log("No RLS policies found or error occurred:", policiesError?.message);
       }
     } catch (error) {
-      console.log("Could not retrieve RLS policies, they will be missing from the backup");
+      console.log("Could not retrieve RLS policies, they will be missing from the backup", error);
     }
     
     // Insert data into tables
@@ -382,8 +391,9 @@ serve(async (req: Request) => {
       }
     }
     
-    // Try to get functions and procedures if the helper functions exist
+    // Try to get functions, views and triggers if the helper functions exist
     try {
+      console.log("Testing get_functions_info...");
       const { data: functions, error: functionsError } = await supabaseAdmin.rpc('get_functions_info');
       
       if (!functionsError && functions) {
@@ -393,13 +403,11 @@ serve(async (req: Request) => {
             sqlScript += `${func.definition}\n\n`;
           }
         }
+      } else {
+        console.log("Error getting functions:", functionsError?.message);
       }
-    } catch (error) {
-      console.log("Could not retrieve functions, they will be missing from the backup");
-    }
-    
-    // Try to get views if the helper functions exist
-    try {
+      
+      console.log("Testing get_views_info...");
       const { data: views, error: viewsError } = await supabaseAdmin.rpc('get_views_info');
       
       if (!viewsError && views) {
@@ -410,13 +418,11 @@ serve(async (req: Request) => {
             sqlScript += `CREATE OR REPLACE VIEW ${view.schema}.${view.name} AS\n${view.definition};\n\n`;
           }
         }
+      } else {
+        console.log("Error getting views:", viewsError?.message);
       }
-    } catch (error) {
-      console.log("Could not retrieve views, they will be missing from the backup");
-    }
-    
-    // Try to get triggers if the helper functions exist
-    try {
+      
+      console.log("Testing get_triggers_info...");
       const { data: triggers, error: triggersError } = await supabaseAdmin.rpc('get_triggers_info');
       
       if (!triggersError && triggers) {
@@ -426,12 +432,14 @@ serve(async (req: Request) => {
             sqlScript += `${trigger.definition}\n\n`;
           }
         }
+      } else {
+        console.log("Error getting triggers:", triggersError?.message);
       }
     } catch (error) {
-      console.log("Could not retrieve triggers, they will be missing from the backup");
+      console.error("Error retrieving database objects:", error);
     }
     
-    console.log("Backup generation completed");
+    console.log("Backup generation completed successfully");
     
     return new Response(sqlScript, {
       headers: {
