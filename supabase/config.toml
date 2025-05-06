@@ -2,6 +2,8 @@
 project_id = "rmvrrrqlqrmtiiwxugfe"
 
 [functions]
+[functions.generate-backup]
+verify_jwt = true
 
 [[auth.redirect_urls]]
 url = "http://localhost:5173/auth/callback"
@@ -9,6 +11,3 @@ url = "http://localhost:5173/auth/callback"
 [[storage.buckets]]
 name = "client-photos"
 public = true
-
-[functions.generate-backup]
-verify_jwt = true

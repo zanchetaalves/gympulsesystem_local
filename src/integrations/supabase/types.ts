@@ -196,10 +196,53 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      _rls_policies: {
+        Row: {
+          command: string | null
+          permissive: string | null
+          policy_name: unknown | null
+          qualifier: string | null
+          roles: string | null
+          schema_name: unknown | null
+          table_name: unknown | null
+          with_check: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_functions_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          schema: string
+          name: string
+          definition: string
+        }[]
+      }
+      get_schemas_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          name: string
+          owner: string
+        }[]
+      }
+      get_triggers_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          schema: string
+          table_name: string
+          name: string
+          definition: string
+        }[]
+      }
+      get_views_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          schema: string
+          name: string
+          definition: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

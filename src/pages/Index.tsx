@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [configStatus, setConfigStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isGeneratingBackup, setIsGeneratingBackup] = useState(false);
   const { toast } = useToast();
 
   const configureDbAccess = async () => {
@@ -60,11 +61,65 @@ const Index = () => {
     }
   };
 
+  const generateBackup = async () => {
+    setIsGeneratingBackup(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Erro",
+          description: "Você precisa estar autenticado para gerar backup.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Call the edge function to generate a backup
+      const { data, error } = await supabase.functions.invoke('generate-backup', {});
+      
+      if (error) {
+        console.error("Erro ao gerar backup:", error);
+        toast({
+          title: "Erro",
+          description: `Falha ao gerar backup: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Create a blob and download it
+      const blob = new Blob([data], { type: 'application/sql' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `supabase_backup_${new Date().toISOString().split('T')[0]}.sql`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      
+      toast({
+        title: "Sucesso",
+        description: "Backup gerado com sucesso!",
+      });
+    } catch (error: any) {
+      console.error("Erro:", error);
+      toast({
+        title: "Erro",
+        description: `Falha ao gerar backup: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingBackup(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Configuração de Acesso ao Banco de Dados</h1>
       
-      <Card className="p-6">
+      <Card className="p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Acesso ao PostgreSQL</h2>
         <p className="mb-4">
           Clique no botão abaixo para permitir acesso ao banco de dados PostgreSQL de qualquer IP.
@@ -103,6 +158,21 @@ const Index = () => {
             Ocorreu um erro ao tentar configurar o acesso. Por favor, tente novamente ou contate o suporte.
           </p>
         )}
+      </Card>
+      
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Backup do Banco de Dados</h2>
+        <p className="mb-4">
+          Clique no botão abaixo para gerar e baixar um backup completo do banco de dados.
+          O backup incluirá todos os schemas, tabelas, funções, views e políticas de segurança.
+        </p>
+        
+        <Button 
+          onClick={generateBackup} 
+          disabled={isGeneratingBackup}
+        >
+          {isGeneratingBackup ? "Gerando Backup..." : "Gerar Backup do Banco de Dados"}
+        </Button>
       </Card>
       
       <div className="mt-6 border p-4 rounded-md bg-yellow-50">
