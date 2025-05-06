@@ -23,6 +23,25 @@ serve(async (req: Request) => {
   try {
     console.log("Starting backup generation...");
     
+    // Check if the helper functions exist by trying to call them
+    const { data: schemasCheck, error: schemasCheckError } = await supabaseAdmin.rpc('get_schemas_info');
+    
+    if (schemasCheckError) {
+      console.error("Error checking helper functions:", schemasCheckError.message);
+      
+      if (schemasCheckError.message.includes("Could not find the function")) {
+        return new Response(JSON.stringify({ 
+          error: "Helper functions not found in the database. Please run the migration file 20250506_add_backup_helper_functions.sql first.",
+          details: "The migrations in supabase/migrations/ need to be applied to the database before using this function."
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      throw schemasCheckError;
+    }
+    
     // Get schemas and tables information
     const { data: schemas, error: schemasError } = await supabaseAdmin.rpc('get_schemas_info');
     
@@ -192,16 +211,147 @@ serve(async (req: Request) => {
     sqlScript += `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";\n`;
     sqlScript += `INSERT INTO storage.buckets (id, name, public) VALUES ('client-photos', 'client-photos', true) ON CONFLICT DO NOTHING;\n\n`;
     
-    // Get Row Level Security (RLS) policies
-    const { data: policies, error: policiesError } = await supabaseAdmin.from('_rls_policies').select('*');
+    // Generate the helper functions needed for future backups
+    sqlScript += `-- Helper Functions for Backup Process\n`;
+    sqlScript += `CREATE OR REPLACE FUNCTION get_schemas_info()\n`;
+    sqlScript += `RETURNS TABLE (\n`;
+    sqlScript += `  name TEXT,\n`;
+    sqlScript += `  owner TEXT\n`;
+    sqlScript += `) SECURITY DEFINER AS $$\n`;
+    sqlScript += `BEGIN\n`;
+    sqlScript += `  RETURN QUERY\n`;
+    sqlScript += `  SELECT n.nspname AS name, pg_catalog.pg_get_userbyid(n.nspowner) AS owner\n`;
+    sqlScript += `  FROM pg_catalog.pg_namespace n\n`;
+    sqlScript += `  WHERE n.nspname NOT LIKE 'pg_%'\n`;
+    sqlScript += `    AND n.nspname != 'information_schema'\n`;
+    sqlScript += `  ORDER BY name;\n`;
+    sqlScript += `END;\n`;
+    sqlScript += `$$ LANGUAGE plpgsql;\n\n`;
     
-    if (!policiesError && policies) {
-      sqlScript += `-- Row Level Security (RLS) Policies\n`;
-      for (const policy of policies) {
-        sqlScript += `ALTER TABLE ${policy.schema_name}.${policy.table_name} ENABLE ROW LEVEL SECURITY;\n`;
-        // The actual policy definition would need to be reconstructed from the policy info
+    sqlScript += `CREATE OR REPLACE FUNCTION get_views_info()\n`;
+    sqlScript += `RETURNS TABLE (\n`;
+    sqlScript += `  schema TEXT,\n`;
+    sqlScript += `  name TEXT,\n`;
+    sqlScript += `  definition TEXT\n`;
+    sqlScript += `) SECURITY DEFINER AS $$\n`;
+    sqlScript += `BEGIN\n`;
+    sqlScript += `  RETURN QUERY\n`;
+    sqlScript += `  SELECT \n`;
+    sqlScript += `    schemaname::TEXT AS schema,\n`;
+    sqlScript += `    viewname::TEXT AS name,\n`;
+    sqlScript += `    pg_get_viewdef(c.oid, true)::TEXT AS definition\n`;
+    sqlScript += `  FROM pg_catalog.pg_views v\n`;
+    sqlScript += `  JOIN pg_catalog.pg_class c ON c.relname = v.viewname\n`;
+    sqlScript += `  JOIN pg_catalog.pg_namespace n ON n.nspname = v.schemaname AND c.relnamespace = n.oid\n`;
+    sqlScript += `  WHERE schemaname NOT LIKE 'pg_%'\n`;
+    sqlScript += `    AND schemaname != 'information_schema'\n`;
+    sqlScript += `  ORDER BY schema, name;\n`;
+    sqlScript += `END;\n`;
+    sqlScript += `$$ LANGUAGE plpgsql;\n\n`;
+    
+    sqlScript += `CREATE OR REPLACE FUNCTION get_functions_info()\n`;
+    sqlScript += `RETURNS TABLE (\n`;
+    sqlScript += `  schema TEXT,\n`;
+    sqlScript += `  name TEXT,\n`;
+    sqlScript += `  definition TEXT\n`;
+    sqlScript += `) SECURITY DEFINER AS $$\n`;
+    sqlScript += `BEGIN\n`;
+    sqlScript += `  RETURN QUERY\n`;
+    sqlScript += `  SELECT \n`;
+    sqlScript += `    n.nspname::TEXT AS schema,\n`;
+    sqlScript += `    p.proname::TEXT AS name,\n`;
+    sqlScript += `    pg_get_functiondef(p.oid)::TEXT AS definition\n`;
+    sqlScript += `  FROM pg_catalog.pg_proc p\n`;
+    sqlScript += `  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace\n`;
+    sqlScript += `  WHERE n.nspname NOT LIKE 'pg_%'\n`;
+    sqlScript += `    AND n.nspname != 'information_schema'\n`;
+    sqlScript += `  ORDER BY schema, name;\n`;
+    sqlScript += `END;\n`;
+    sqlScript += `$$ LANGUAGE plpgsql;\n\n`;
+    
+    sqlScript += `CREATE OR REPLACE FUNCTION get_triggers_info()\n`;
+    sqlScript += `RETURNS TABLE (\n`;
+    sqlScript += `  schema TEXT,\n`;
+    sqlScript += `  table_name TEXT,\n`;
+    sqlScript += `  name TEXT,\n`;
+    sqlScript += `  definition TEXT\n`;
+    sqlScript += `) SECURITY DEFINER AS $$\n`;
+    sqlScript += `BEGIN\n`;
+    sqlScript += `  RETURN QUERY\n`;
+    sqlScript += `  SELECT \n`;
+    sqlScript += `    n.nspname::TEXT AS schema,\n`;
+    sqlScript += `    c.relname::TEXT AS table_name,\n`;
+    sqlScript += `    t.tgname::TEXT AS name,\n`;
+    sqlScript += `    pg_get_triggerdef(t.oid)::TEXT AS definition\n`;
+    sqlScript += `  FROM pg_catalog.pg_trigger t\n`;
+    sqlScript += `  JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid\n`;
+    sqlScript += `  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace\n`;
+    sqlScript += `  WHERE NOT t.tgisinternal\n`;
+    sqlScript += `    AND n.nspname NOT LIKE 'pg_%'\n`;
+    sqlScript += `    AND n.nspname != 'information_schema'\n`;
+    sqlScript += `  ORDER BY schema, table_name, name;\n`;
+    sqlScript += `END;\n`;
+    sqlScript += `$$ LANGUAGE plpgsql;\n\n`;
+    
+    sqlScript += `CREATE OR REPLACE VIEW _rls_policies AS\n`;
+    sqlScript += `SELECT\n`;
+    sqlScript += `  n.nspname AS schema_name,\n`;
+    sqlScript += `  c.relname AS table_name,\n`;
+    sqlScript += `  pol.polname AS policy_name,\n`;
+    sqlScript += `  CASE pol.polcmd\n`;
+    sqlScript += `    WHEN 'r' THEN 'SELECT'\n`;
+    sqlScript += `    WHEN 'a' THEN 'INSERT'\n`;
+    sqlScript += `    WHEN 'w' THEN 'UPDATE'\n`;
+    sqlScript += `    WHEN 'd' THEN 'DELETE'\n`;
+    sqlScript += `    ELSE 'ALL'\n`;
+    sqlScript += `  END AS command,\n`;
+    sqlScript += `  CASE pol.polpermissive\n`;
+    sqlScript += `    WHEN TRUE THEN 'PERMISSIVE'\n`;
+    sqlScript += `    ELSE 'RESTRICTIVE'\n`;
+    sqlScript += `  END AS permissive,\n`;
+    sqlScript += `  CASE pol.polroles = '{0}'\n`;
+    sqlScript += `    WHEN TRUE THEN 'PUBLIC'\n`;
+    sqlScript += `    ELSE array_to_string(ARRAY(\n`;
+    sqlScript += `      SELECT rolname\n`;
+    sqlScript += `      FROM pg_roles\n`;
+    sqlScript += `      WHERE oid = ANY(pol.polroles)\n`;
+    sqlScript += `    ), ', ')\n`;
+    sqlScript += `  END AS roles,\n`;
+    sqlScript += `  pg_get_expr(pol.polqual, pol.polrelid) AS qualifier,\n`;
+    sqlScript += `  pg_get_expr(pol.polwithcheck, pol.polrelid) AS with_check\n`;
+    sqlScript += `FROM pg_policy pol\n`;
+    sqlScript += `JOIN pg_class c ON c.oid = pol.polrelid\n`;
+    sqlScript += `JOIN pg_namespace n ON n.oid = c.relnamespace\n`;
+    sqlScript += `WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')\n`;
+    sqlScript += `ORDER BY schema_name, table_name, policy_name;\n\n`;
+    
+    sqlScript += `GRANT EXECUTE ON FUNCTION get_schemas_info() TO service_role;\n`;
+    sqlScript += `GRANT EXECUTE ON FUNCTION get_views_info() TO service_role;\n`;
+    sqlScript += `GRANT EXECUTE ON FUNCTION get_functions_info() TO service_role;\n`;
+    sqlScript += `GRANT EXECUTE ON FUNCTION get_triggers_info() TO service_role;\n`;
+    sqlScript += `GRANT SELECT ON _rls_policies TO service_role;\n\n`;
+    
+    // Try to get Row Level Security (RLS) policies if the helper functions exist
+    try {
+      const { data: policies, error: policiesError } = await supabaseAdmin.from('_rls_policies').select('*');
+      
+      if (!policiesError && policies) {
+        sqlScript += `-- Row Level Security (RLS) Policies\n`;
+        for (const policy of policies) {
+          sqlScript += `ALTER TABLE ${policy.schema_name}.${policy.table_name} ENABLE ROW LEVEL SECURITY;\n`;
+          // Add policy name, conditions, etc.
+          const policyDefinition = `CREATE POLICY "${policy.policy_name}" ON ${policy.schema_name}.${policy.table_name} 
+            FOR ${policy.command} 
+            TO ${policy.roles} 
+            ${policy.qualifier ? `USING (${policy.qualifier})` : ''} 
+            ${policy.with_check ? `WITH CHECK (${policy.with_check})` : ''};`;
+          
+          sqlScript += `${policyDefinition}\n`;
+        }
+        sqlScript += `\n`;
       }
-      sqlScript += `\n`;
+    } catch (error) {
+      console.log("Could not retrieve RLS policies, they will be missing from the backup");
     }
     
     // Insert data into tables
@@ -232,41 +382,53 @@ serve(async (req: Request) => {
       }
     }
     
-    // Functions and procedures
-    const { data: functions, error: functionsError } = await supabaseAdmin.rpc('get_functions_info');
-    
-    if (!functionsError && functions) {
-      sqlScript += `-- Functions and procedures\n`;
-      for (const func of functions) {
-        if (func.definition && !func.name.startsWith('pg_')) {
-          sqlScript += `${func.definition}\n\n`;
+    // Try to get functions and procedures if the helper functions exist
+    try {
+      const { data: functions, error: functionsError } = await supabaseAdmin.rpc('get_functions_info');
+      
+      if (!functionsError && functions) {
+        sqlScript += `-- Functions and procedures\n`;
+        for (const func of functions) {
+          if (func.definition && !func.name.startsWith('pg_')) {
+            sqlScript += `${func.definition}\n\n`;
+          }
         }
       }
+    } catch (error) {
+      console.log("Could not retrieve functions, they will be missing from the backup");
     }
     
-    // Views
-    const { data: views, error: viewsError } = await supabaseAdmin.rpc('get_views_info');
-    
-    if (!viewsError && views) {
-      sqlScript += `-- Views\n`;
-      for (const view of views) {
-        if (view.definition && !view.name.startsWith('pg_') && 
-            view.schema !== 'information_schema' && !view.schema.startsWith('pg_')) {
-          sqlScript += `CREATE OR REPLACE VIEW ${view.schema}.${view.name} AS\n${view.definition};\n\n`;
+    // Try to get views if the helper functions exist
+    try {
+      const { data: views, error: viewsError } = await supabaseAdmin.rpc('get_views_info');
+      
+      if (!viewsError && views) {
+        sqlScript += `-- Views\n`;
+        for (const view of views) {
+          if (view.definition && !view.name.startsWith('pg_') && 
+              view.schema !== 'information_schema' && !view.schema.startsWith('pg_')) {
+            sqlScript += `CREATE OR REPLACE VIEW ${view.schema}.${view.name} AS\n${view.definition};\n\n`;
+          }
         }
       }
+    } catch (error) {
+      console.log("Could not retrieve views, they will be missing from the backup");
     }
     
-    // Triggers
-    const { data: triggers, error: triggersError } = await supabaseAdmin.rpc('get_triggers_info');
-    
-    if (!triggersError && triggers) {
-      sqlScript += `-- Triggers\n`;
-      for (const trigger of triggers) {
-        if (trigger.definition && !trigger.name.startsWith('pg_')) {
-          sqlScript += `${trigger.definition}\n\n`;
+    // Try to get triggers if the helper functions exist
+    try {
+      const { data: triggers, error: triggersError } = await supabaseAdmin.rpc('get_triggers_info');
+      
+      if (!triggersError && triggers) {
+        sqlScript += `-- Triggers\n`;
+        for (const trigger of triggers) {
+          if (trigger.definition && !trigger.name.startsWith('pg_')) {
+            sqlScript += `${trigger.definition}\n\n`;
+          }
         }
       }
+    } catch (error) {
+      console.log("Could not retrieve triggers, they will be missing from the backup");
     }
     
     console.log("Backup generation completed");
@@ -280,7 +442,10 @@ serve(async (req: Request) => {
     });
   } catch (error) {
     console.error("Error generating backup:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: "Make sure you've run all migrations in supabase/migrations/ before using this function."
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -12,4 +12,3 @@ public = true
 
 [functions.generate-backup]
 verify_jwt = true
-
