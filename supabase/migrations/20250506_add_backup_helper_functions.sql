@@ -7,7 +7,7 @@ RETURNS TABLE (
 ) SECURITY DEFINER AS $$
 BEGIN
   RETURN QUERY
-  SELECT n.nspname AS name, pg_catalog.pg_get_userbyid(n.nspowner) AS owner
+  SELECT n.nspname::TEXT AS name, pg_catalog.pg_get_userbyid(n.nspowner)::TEXT AS owner
   FROM pg_catalog.pg_namespace n
   WHERE n.nspname NOT LIKE 'pg_%'
     AND n.nspname != 'information_schema'

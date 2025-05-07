@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -22,11 +23,8 @@ serve(async (req: Request) => {
   try {
     console.log("Starting backup generation process");
     
-    // Instead of calling the function directly, use a raw SQL query to get schemas info
-    // This avoids the structure mismatch error
-    console.log("Using raw SQL queries instead of helper functions");
-    
-    // Get schemas directly with SQL
+    // Use direct SQL query to get schemas instead of helper function
+    console.log("Fetching schemas directly with SQL query");
     const { data: schemas, error: schemasError } = await supabaseAdmin.rpc(
       'get_schemas_info'
     );
@@ -36,7 +34,7 @@ serve(async (req: Request) => {
       
       return new Response(JSON.stringify({
         error: "Error fetching database schemas",
-        details: "There was an issue retrieving the database structure. Please make sure the SQL migrations have been applied correctly."
+        details: schemasError.message
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -230,7 +228,7 @@ serve(async (req: Request) => {
     sqlScript += `) SECURITY DEFINER AS $$\n`;
     sqlScript += `BEGIN\n`;
     sqlScript += `  RETURN QUERY\n`;
-    sqlScript += `  SELECT n.nspname AS name, pg_catalog.pg_get_userbyid(n.nspowner) AS owner\n`;
+    sqlScript += `  SELECT n.nspname::TEXT AS name, pg_catalog.pg_get_userbyid(n.nspowner)::TEXT AS owner\n`;
     sqlScript += `  FROM pg_catalog.pg_namespace n\n`;
     sqlScript += `  WHERE n.nspname NOT LIKE 'pg_%'\n`;
     sqlScript += `    AND n.nspname != 'information_schema'\n`;
@@ -251,7 +249,7 @@ serve(async (req: Request) => {
     sqlScript += `    viewname::TEXT AS name,\n`;
     sqlScript += `    pg_get_viewdef(c.oid, true)::TEXT AS definition\n`;
     sqlScript += `  FROM pg_catalog.pg_views v\n`;
-    sqlScript += `  JOIN pg_catalog.pg_class c ON c.oid = v.viewname\n`;
+    sqlScript += `  JOIN pg_catalog.pg_class c ON c.relname = v.viewname\n`;
     sqlScript += `  JOIN pg_catalog.pg_namespace n ON n.nspname = v.schemaname AND c.relnamespace = n.oid\n`;
     sqlScript += `  WHERE schemaname NOT LIKE 'pg_%'\n`;
     sqlScript += `    AND schemaname != 'information_schema'\n`;
