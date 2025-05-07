@@ -23,67 +23,38 @@ serve(async (req: Request) => {
   try {
     console.log("Starting backup generation process");
     
-    // Try to directly query the function to check if it exists
-    const { data: schemaInfoCheck, error: schemaInfoError } = await supabaseAdmin.from('pg_catalog.pg_proc')
-      .select('proname')
-      .eq('proname', 'get_schemas_info')
-      .limit(1);
-      
-    if (schemaInfoError) {
-      console.error("Error checking if function exists:", schemaInfoError.message);
-      return new Response(JSON.stringify({
-        error: "Error checking if helper functions exist",
-        details: schemaInfoError.message
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    console.log("Function check result:", JSON.stringify(schemaInfoCheck));
-    
-    // Direct SQL query to test function
-    console.log("Testing helper function with direct SQL query");
-    const { data: directTest, error: directError } = await supabaseAdmin.rpc(
+    // Use a direct SQL query to test if function exists instead of querying pg_catalog tables
+    // This approach avoids the "relation does not exist" error
+    const { data: functionTest, error: functionTestError } = await supabaseAdmin.rpc(
       'get_schemas_info'
-    );
-
-    if (directError) {
-      console.error("Direct function test failed:", directError.message);
-      // Check if the error is related to function not existing
-      if (directError.message.includes("function") && directError.message.includes("does not exist")) {
+    ).maybeSingle();
+    
+    if (functionTestError) {
+      console.error("Error testing helper function:", functionTestError.message);
+      
+      // If the error indicates the function doesn't exist
+      if (functionTestError.message.includes("function") && functionTestError.message.includes("does not exist")) {
         return new Response(JSON.stringify({
           error: "Helper function does not exist",
-          details: "The migration that creates the helper functions may not have been applied. Please run the migration again."
+          details: "The migration that creates the helper functions may not have been applied. Please run the migration again using the SQL editor."
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      // If it's a schema mismatch error
-      if (directError.message.includes("structure of query does not match")) {
-        return new Response(JSON.stringify({
-          error: "Function schema mismatch",
-          details: "The function exists but its structure doesn't match the expected result type. Try recreating the function."
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Generic error
+      
+      // Return a generic error
       return new Response(JSON.stringify({
         error: "Error with helper function get_schemas_info",
-        details: directError.message
+        details: functionTestError.message
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log("Direct function call successful. Result:", JSON.stringify(directTest));
-
+    console.log("Helper function exists and works!");
+    
     // Full backup procedure
     console.log("Beginning full backup generation");
     
