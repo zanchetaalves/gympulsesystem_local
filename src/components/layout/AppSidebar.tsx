@@ -24,10 +24,15 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
+  const { user } = useAuth();
+  
+  // Check if user has admin access
+  const isAdmin = user?.email === "zancheta2010@gmail.com";
   
   // Menu items
   const menuItems = [
@@ -36,11 +41,12 @@ export function AppSidebar() {
       icon: BarChart2,
       url: "/",
     },
-    {
+    // Only show Users menu for admin user
+    ...(isAdmin ? [{
       title: "Usuários",
       icon: Users,
       url: "/usuarios",
-    },
+    }] : []),
     {
       title: "Clientes",
       icon: User,

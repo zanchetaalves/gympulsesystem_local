@@ -2,45 +2,46 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-// Adapter functions para converter entre os formatos do banco e da aplicação
-export const dbToAppUser = (dbUser: any): User => ({
-  id: dbUser.id,
-  name: dbUser.name,
-  email: dbUser.email,
-  profile: dbUser.profile,
-  active: dbUser.active ?? true,
-  createdAt: new Date(dbUser.created_at),
-});
-
-export const appToDbUser = (user: Partial<User>) => ({
-  name: user.name,
-  email: user.email,
-  profile: user.profile,
-  active: user.active,
-  created_at: user.createdAt instanceof Date
-    ? user.createdAt.toISOString()
-    : user.createdAt,
-});
+// Define the User type for Supabase Auth users
+export interface AuthUser {
+  id: string;
+  email: string;
+  created_at: string;
+  app_metadata: {
+    provider?: string;
+  };
+  user_metadata: {
+    name?: string;
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
 
 export const useUsers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  // Check if current user has access to this feature
+  const hasAccess = user?.email === "zancheta2010@gmail.com";
 
-  // Query para buscar usuários
+  // Query for fetching users
   const {
     data: users = [],
     isLoading,
     error
   } = useQuery({
-    queryKey: ['users'],
+    queryKey: ['auth-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (!hasAccess) {
+        return [];
+      }
+      
+      // Only users with service_role can access auth.users through the API
+      const { data, error } = await supabase.auth.admin.listUsers();
 
       if (error) {
         toast({
@@ -51,26 +52,28 @@ export const useUsers = () => {
         throw error;
       }
 
-      return (data || []).map(dbToAppUser);
+      return data.users || [];
     },
+    enabled: hasAccess,
   });
 
-  // Mutation para criar usuário
+  // Mutation for creating a new user
   const createUser = useMutation({
-    mutationFn: async (data: Partial<User>) => {
-      const dbData = appToDbUser(data);
-
-      const { data: newUser, error } = await supabase
-        .from('users')
-        .insert([dbData])
-        .select()
-        .single();
+    mutationFn: async (data: { email: string; password: string; name?: string }) => {
+      const { data: newUser, error } = await supabase.auth.admin.createUser({
+        email: data.email,
+        password: data.password,
+        email_confirm: true,
+        user_metadata: {
+          name: data.name
+        }
+      });
 
       if (error) throw error;
-      return dbToAppUser(newUser);
+      return newUser;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-users'] });
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso!",
@@ -85,26 +88,22 @@ export const useUsers = () => {
     },
   });
 
-  // Mutation para atualizar usuário
+  // Mutation for updating a user
   const updateUser = useMutation({
-    mutationFn: async (data: Partial<User>) => {
-      const dbData = {
-        ...appToDbUser(data),
-        id: data.id
-      };
-
-      const { data: updatedUser, error } = await supabase
-        .from('users')
-        .update(dbData)
-        .eq('id', dbData.id)
-        .select()
-        .single();
+    mutationFn: async (data: { id: string; email?: string; metadata?: Record<string, any> }) => {
+      const { data: updatedUser, error } = await supabase.auth.admin.updateUserById(
+        data.id,
+        {
+          email: data.email,
+          user_metadata: data.metadata,
+        }
+      );
 
       if (error) throw error;
-      return dbToAppUser(updatedUser);
+      return updatedUser;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-users'] });
       toast({
         title: "Sucesso",
         description: "Usuário atualizado com sucesso!",
@@ -119,19 +118,16 @@ export const useUsers = () => {
     },
   });
 
-  // Mutation para excluir usuário
+  // Mutation for deleting a user
   const deleteUser = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.auth.admin.deleteUser(id);
 
       if (error) throw error;
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-users'] });
       toast({
         title: "Sucesso",
         description: "Usuário excluído com sucesso!",
@@ -152,6 +148,7 @@ export const useUsers = () => {
     error,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    hasAccess
   };
 };

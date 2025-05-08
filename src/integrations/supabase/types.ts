@@ -167,33 +167,6 @@ export type Database = {
           },
         ]
       }
-      users: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          email: string
-          id: string
-          name: string
-          profile: string
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          email: string
-          id?: string
-          name: string
-          profile: string
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string
-          profile?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       _rls_policies: {

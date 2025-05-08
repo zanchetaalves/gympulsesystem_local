@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -9,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
@@ -31,28 +31,35 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { User } from "@/types";
-import { useUsers } from "@/hooks/useUsers";
+import { formatDate } from "@/lib/utils";
+import { useUsers, AuthUser } from "@/hooks/useUsers";
 
 const Users = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AuthUser | null>(null);
   
-  // Usando o hook personalizado para gerenciar os usuários
+  // Using the updated hook to manage users
   const { 
     users, 
     isLoading: isLoadingUsers,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    hasAccess
   } = useUsers();
+
+  // If the user doesn't have access, redirect to home
+  if (!hasAccess) {
+    return <Navigate to="/" />;
+  }
 
   const handleCreateUser = async (data: any) => {
     createUser.mutate({
-      ...data,
-      createdAt: new Date(),
+      email: data.email,
+      password: data.password || '',
+      name: data.name,
     }, {
       onSuccess: () => {
         setCreateDialogOpen(false);
@@ -61,7 +68,16 @@ const Users = () => {
   };
 
   const handleEditUser = async (data: any) => {
-    updateUser.mutate(data, {
+    if (!selectedUser) return;
+    
+    updateUser.mutate({
+      id: selectedUser.id,
+      email: data.email,
+      metadata: {
+        ...selectedUser.user_metadata,
+        name: data.name
+      }
+    }, {
       onSuccess: () => {
         setEditDialogOpen(false);
         setSelectedUser(null);
@@ -117,8 +133,7 @@ const Users = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Método</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -126,32 +141,23 @@ const Users = () => {
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
+                    <TableCell colSpan={5} className="text-center py-4">
                       Nenhum usuário cadastrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => (
+                  users.map((user: any) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {user.user_metadata?.name || 'N/A'}
+                      </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={
-                          user.profile === "Admin" 
-                            ? "default" 
-                            : user.profile === "Gerente" 
-                              ? "secondary" 
-                              : "outline"
-                        }>
-                          {user.profile}
+                        <Badge variant="outline">
+                          {user.app_metadata?.provider || 'Email'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={user.active ? "success" : "destructive"}>
-                          {user.active ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(user.createdAt)}</TableCell>
+                      <TableCell>{formatDate(new Date(user.created_at))}</TableCell>
                       <TableCell className="text-right">
                         <Dialog open={editDialogOpen && selectedUser?.id === user.id} onOpenChange={(open) => {
                           setEditDialogOpen(open);
@@ -174,7 +180,12 @@ const Users = () => {
                               <UserForm 
                                 onSubmit={handleEditUser} 
                                 isLoading={updateUser.isPending} 
-                                defaultValues={selectedUser}
+                                defaultValues={{
+                                  id: selectedUser.id,
+                                  name: selectedUser.user_metadata?.name || '',
+                                  email: selectedUser.email,
+                                }}
+                                isEditing
                               />
                             )}
                           </DialogContent>
