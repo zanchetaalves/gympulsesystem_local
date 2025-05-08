@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types";
@@ -11,18 +12,18 @@ export const dbToAppClient = (dbClient: any): Client => ({
   email: dbClient.email,
   phone: dbClient.phone,
   address: dbClient.address,
+  // Usar a data exata sem ajustes de timezone
   birthDate: dbClient.birth_date ? new Date(dbClient.birth_date) : new Date(),
   createdAt: new Date(dbClient.created_at),
   photoUrl: dbClient.photo_url || null,
 });
 
 export const appToDbClient = (client: Partial<Client>) => {
-  // Simplify date handling by just sending the date string directly
-  // This preserves the exact date without timezone adjustments
+  // Simplificamos o tratamento de datas para evitar problemas de timezone
   let birthDateStr = null;
   if (client.birthDate) {
     if (client.birthDate instanceof Date) {
-      // Format the date as YYYY-MM-DD
+      // Formato YYYY-MM-DD sem ajustes de timezone
       const year = client.birthDate.getFullYear();
       const month = String(client.birthDate.getMonth() + 1).padStart(2, '0');
       const day = String(client.birthDate.getDate()).padStart(2, '0');

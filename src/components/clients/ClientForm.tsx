@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,8 +13,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { format, parse, isValid } from "date-fns";
 import { WebcamCapture } from "./WebcamCapture";
+import { DateInput } from "@/components/form/DateInput";
+import { CPFInput } from "@/components/form/CPFInput";
+import { PhoneInput } from "@/components/form/PhoneInput";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -39,35 +40,18 @@ interface ClientFormProps {
 }
 
 export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormProps) {
-  const [dateInputValue, setDateInputValue] = useState(
-    defaultValues?.birthDate ? format(new Date(defaultValues.birthDate), "dd/MM/yyyy") : ""
-  );
-  
-  const [photoUrl, setPhotoUrl] = useState<string | null>(defaultValues?.photoUrl || null);
+  const [photoUrl, setPhotoUrl] = React.useState<string | null>(defaultValues?.photoUrl || null);
 
   const form = useForm<ClientFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: null,
       ...defaultValues,
-      // Use the date directly without any timezone adjustments
+      // Use a data diretamente sem ajustes de timezone
       birthDate: defaultValues?.birthDate ? new Date(defaultValues.birthDate) : undefined,
       photoUrl: defaultValues?.photoUrl || null,
     },
   });
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setDateInputValue(value);
-    
-    // Parse the date using date-fns
-    const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-    
-    if (isValid(parsedDate)) {
-      // Use the exact date from the input without timezone adjustments
-      form.setValue("birthDate", parsedDate);
-    }
-  };
 
   const handlePhotoCapture = (photoDataUrl: string | null) => {
     setPhotoUrl(photoDataUrl);
@@ -75,7 +59,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
   };
 
   const handleSubmit = (data: ClientFormData) => {
-    // Pass the data directly without any additional timezone adjustments
+    // Passa os dados diretamente sem ajustes de timezone
     onSubmit({
       ...data,
       photoUrl,
@@ -101,19 +85,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="cpf"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CPF</FormLabel>
-                  <FormControl>
-                    <Input placeholder="000.000.000-00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <CPFInput name="cpf" />
 
             <FormField
               control={form.control}
@@ -134,19 +106,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <PhoneInput name="phone" />
 
             <FormField
               control={form.control}
@@ -162,24 +122,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="birthDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data de Nascimento</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="DD/MM/AAAA"
-                      value={dateInputValue}
-                      onChange={handleDateChange}
-                      className="mb-1"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <DateInput name="birthDate" label="Data de Nascimento" />
           </div>
           
           <div>
