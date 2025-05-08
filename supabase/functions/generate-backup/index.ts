@@ -23,8 +23,8 @@ serve(async (req: Request) => {
   try {
     console.log("Starting backup generation process");
     
-    // Use direct SQL query to get schemas instead of helper function
-    console.log("Fetching schemas directly with SQL query");
+    // Use helper function to get schemas info
+    console.log("Fetching schemas using helper function");
     const { data: schemas, error: schemasError } = await supabaseAdmin.rpc(
       'get_schemas_info'
     );
@@ -339,9 +339,9 @@ serve(async (req: Request) => {
     sqlScript += `GRANT EXECUTE ON FUNCTION get_triggers_info() TO service_role;\n`;
     sqlScript += `GRANT SELECT ON _rls_policies TO service_role;\n\n`;
     
-    // Only try to get RLS policies using direct SQL query instead of helper function
+    // Try to get RLS policies using the helper view
     try {
-      console.log("Querying RLS policies directly");
+      console.log("Querying RLS policies");
       const { data: policies, error: policiesError } = await supabaseAdmin.from('_rls_policies').select('*');
       
       if (!policiesError && policies && policies.length > 0) {

@@ -1,4 +1,5 @@
 
+
 -- Function to get schemas information
 CREATE OR REPLACE FUNCTION get_schemas_info()
 RETURNS TABLE (
@@ -121,3 +122,4 @@ GRANT EXECUTE ON FUNCTION get_views_info() TO service_role;
 GRANT EXECUTE ON FUNCTION get_functions_info() TO service_role;
 GRANT EXECUTE ON FUNCTION get_triggers_info() TO service_role;
 GRANT SELECT ON _rls_policies TO service_role;
+
