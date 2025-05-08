@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 
-interface MaskedInputProps extends React.ComponentProps<typeof Input> {
+interface MaskedInputProps extends Omit<React.ComponentProps<typeof Input>, "onChange"> {
   mask: string;
   value: string;
   onChange: (value: string) => void;
@@ -46,7 +46,7 @@ export function MaskedInput({ mask, value, onChange, ...props }: MaskedInputProp
     return maskedText.replace(/\D/g, "");
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     const numericValue = extractNumeric(inputValue);
     const newMaskedValue = applyMask(numericValue, mask);
