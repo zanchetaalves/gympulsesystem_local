@@ -70,7 +70,7 @@ export const appToDbClient = (client: Partial<Client>) => {
   if (client.email !== undefined) result.email = client.email || null;
   if (client.phone !== undefined) result.phone = client.phone;
   if (client.address !== undefined) result.address = client.address || null;
-  if (birthDateStr !== undefined) result.birth_date = birthDateStr;
+  if (birthDateStr !== null) result.birth_date = birthDateStr;
   if (client.photoUrl !== undefined) result.photo_url = client.photoUrl;
   if (client.createdAt !== undefined) {
     result.created_at = client.createdAt instanceof Date

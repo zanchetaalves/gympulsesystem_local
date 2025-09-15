@@ -56,11 +56,18 @@ interface PlanFormProps {
 export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) {
   const { planTypes } = usePlanTypes();
 
+  // Convert numeric values to strings for form inputs
+  const convertedDefaults = defaultValues ? {
+    ...defaultValues,
+    priceBrl: defaultValues.priceBrl ? String(defaultValues.priceBrl) : '',
+    durationMonths: defaultValues.durationMonths ? String(defaultValues.durationMonths) : '',
+  } : {};
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       active: true,
-      ...defaultValues,
+      ...convertedDefaults,
     },
   });
 

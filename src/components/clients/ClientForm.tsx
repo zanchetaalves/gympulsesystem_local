@@ -33,7 +33,9 @@ const formSchema = z.object({
     required_error: "Telefone é obrigatório",
   }).min(10, "Telefone inválido"),
   address: z.string().optional().transform(val => val === "" ? undefined : val),
-  birthDate: z.date().optional(),
+  birthDate: z.date({
+    required_error: "Data de nascimento é obrigatória",
+  }),
   photoUrl: z.string().nullable().optional(),
 });
 
@@ -135,7 +137,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               )}
             />
 
-            <DateInput name="birthDate" label="Data de Nascimento (opcional)" />
+            <DateInput name="birthDate" label="Data de Nascimento" />
           </div>
 
           <div>

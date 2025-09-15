@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS clients (
   email TEXT,
   phone TEXT NOT NULL,
   address TEXT,
-  birth_date DATE,
+  birth_date DATE NOT NULL,
   photo_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );

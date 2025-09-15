@@ -20,7 +20,8 @@
     "migrate:clients": "node scripts/migrate-client-table.js",
     "update:plans": "node scripts/update-plans.js",
     "clean:plans": "node scripts/clean-plans.js",
-    "test:client-deletion": "node scripts/test-client-deletion.js"
+    "test:client-deletion": "node scripts/test-client-deletion.js",
+    "migrate:birthdate": "node scripts/make-birthdate-required.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
