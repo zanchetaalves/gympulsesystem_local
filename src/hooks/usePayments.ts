@@ -1,6 +1,32 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+const API_BASE_URL = 'http://localhost:3001/api';
+
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('access_token');
+  
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Erro na requisição';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorData.message || `Erro ${response.status}`;
+    } catch {
+      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
 import { Payment, PlanType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,25 +62,8 @@ export const usePayments = () => {
   } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          subscriptions:subscription_id (
-            *,
-            clients:client_id (*)
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar pagamentos: " + error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
+      const response = await apiCall('/payments');
+      const data = response.data;
 
       return (data || []).map((dbPayment) => {
         const payment = dbToAppPayment(dbPayment);
@@ -95,20 +104,13 @@ export const usePayments = () => {
     mutationFn: async (data: Partial<Payment>) => {
       console.log("Dados enviados para criação:", data);
       console.log("Dados formatados para DB:", appToDbPayment(data));
-      
+
       const dbData = appToDbPayment(data);
-
-      const { data: newPayment, error } = await supabase
-        .from('payments')
-        .insert([dbData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Erro ao criar pagamento:", error);
-        throw error;
-      }
-      return dbToAppPayment(newPayment);
+      const response = await apiCall('/payments', {
+        method: 'POST',
+        body: JSON.stringify(dbData),
+      });
+      return dbToAppPayment(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -134,15 +136,11 @@ export const usePayments = () => {
         id: data.id
       };
 
-      const { data: updatedPayment, error } = await supabase
-        .from('payments')
-        .update(dbData)
-        .eq('id', dbData.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppPayment(updatedPayment);
+      const response = await apiCall(`/payments/${data.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dbData),
+      });
+      return dbToAppPayment(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });

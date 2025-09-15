@@ -94,6 +94,9 @@ const Clients = () => {
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setSelectedClient(null);
+      },
+      onError: () => {
+        // Mantém o dialog aberto em caso de erro
       }
     });
   };
@@ -197,8 +200,8 @@ const Clients = () => {
                         <TableCell>
                           <div
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getClientSubscriptionStatus(client.id) === "Ativo"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
                               }`}
                           >
                             {getClientSubscriptionStatus(client.id)}

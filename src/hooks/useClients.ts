@@ -1,9 +1,37 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { createErrorHandler, formatDatabaseError } from "@/lib/error-utils";
+
+const API_BASE_URL = 'http://localhost:3001/api';
+
+// HTTP client helper
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('access_token');
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Erro na requisição';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorData.message || `Erro ${response.status}`;
+    } catch {
+      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
 
 // Adapter functions para converter entre os formatos do banco e da aplicação
 export const dbToAppClient = (dbClient: any): Client => ({
@@ -66,86 +94,20 @@ export const useClients = () => {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        const errorMessage = formatDatabaseError(error);
-        toast({
-          title: "Erro ao Carregar Clientes",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      return (data || []).map(dbToAppClient);
+      const response = await apiCall('/clients');
+      return response.data.map(dbToAppClient);
     },
   });
 
   // Mutation para criar cliente
   const createClient = useMutation({
     mutationFn: async (data: Partial<Client>) => {
-      // Handle photo data if it exists (data URL format)
-      let photoUrl = null;
-
-      if (data.photoUrl && data.photoUrl.startsWith('data:image')) {
-        try {
-          // Convert base64 to blob
-          const res = await fetch(data.photoUrl);
-          const blob = await res.blob();
-
-          // Generate a unique filename
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-          const filePath = `${fileName}.jpg`;
-
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('client-photos')
-            .upload(filePath, blob, {
-              contentType: 'image/jpeg',
-            });
-
-          if (uploadError) throw uploadError;
-
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from('client-photos')
-            .getPublicUrl(filePath);
-
-          photoUrl = urlData.publicUrl;
-        } catch (error: any) {
-          console.error("Error uploading photo:", error);
-          toast({
-            title: "Aviso",
-            description: "Não foi possível enviar a foto. Cliente será salvo sem foto.",
-            variant: "default",
-          });
-          // Continue without the photo if there's an error
-        }
-      } else if (data.photoUrl) {
-        // If it's already a URL, keep it
-        photoUrl = data.photoUrl;
-      }
-
-      const dbData = appToDbClient({
-        ...data,
-        photoUrl
+      const dbData = appToDbClient(data);
+      const response = await apiCall('/clients', {
+        method: 'POST',
+        body: JSON.stringify(dbData),
       });
-
-      const { data: newClient, error } = await supabase
-        .from('clients')
-        .insert([dbData])
-        .select()
-        .single();
-
-      if (error) {
-        const errorMessage = formatDatabaseError(error);
-        throw new Error(errorMessage);
-      }
-      return dbToAppClient(newClient);
+      return dbToAppClient(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -167,54 +129,12 @@ export const useClients = () => {
   // Mutation para atualizar cliente
   const updateClient = useMutation({
     mutationFn: async (data: Partial<Client>) => {
-      // Handle photo data if it exists and has changed (data URL format)
-      let photoUrl = data.photoUrl;
-
-      if (data.photoUrl && data.photoUrl.startsWith('data:image')) {
-        try {
-          // Convert base64 to blob
-          const res = await fetch(data.photoUrl);
-          const blob = await res.blob();
-
-          // Generate a unique filename
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-          const filePath = `${fileName}.jpg`;
-
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('client-photos')
-            .upload(filePath, blob, {
-              contentType: 'image/jpeg',
-            });
-
-          if (uploadError) throw uploadError;
-
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from('client-photos')
-            .getPublicUrl(filePath);
-
-          photoUrl = urlData.publicUrl;
-        } catch (error: any) {
-          console.error("Error uploading photo:", error);
-          // Continue with the old photo if there's an error
-        }
-      }
-
-      const dbData = appToDbClient({
-        ...data,
-        photoUrl
+      const dbData = appToDbClient(data);
+      const response = await apiCall(`/clients/${data.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dbData),
       });
-
-      const { data: updatedClient, error } = await supabase
-        .from('clients')
-        .update(dbData)
-        .eq('id', data.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppClient(updatedClient);
+      return dbToAppClient(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -236,16 +156,25 @@ export const useClients = () => {
   // Mutation para excluir cliente
   const deleteClient = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
+      console.log('Tentando excluir cliente com ID via API:', id);
 
-      if (error) throw error;
+      const response = await apiCall(`/clients/${id}`, {
+        method: 'DELETE',
+      });
+
+      console.log('Cliente excluído com sucesso via API:', response);
       return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
+      // Remove o cliente da cache local imediatamente
+      queryClient.setQueryData(['clients'], (oldData: Client[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.filter(client => client.id !== deletedId);
+      });
+
+      // Invalida as queries para garantir sincronização
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+
       toast({
         title: "Sucesso",
         description: "Cliente excluído com sucesso!",

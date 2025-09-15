@@ -1,6 +1,32 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+const API_BASE_URL = 'http://localhost:3001/api';
+
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('access_token');
+  
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Erro na requisição';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorData.message || `Erro ${response.status}`;
+    } catch {
+      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
 import { Plan } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -44,28 +70,15 @@ export const usePlans = () => {
   const queryClient = useQueryClient();
 
   // Query para buscar planos
-  const { 
-    data: plans = [], 
-    isLoading, 
-    error 
+  const {
+    data: plans = [],
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['plans'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar planos: " + error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      return (data || []).map(dbToAppPlan);
+      const response = await apiCall('/plans');
+      return response.data.map(dbToAppPlan);
     },
   });
 
@@ -73,15 +86,12 @@ export const usePlans = () => {
   const createPlan = useMutation({
     mutationFn: async (data: Partial<Plan>) => {
       const dbData = appToDbPlan(data);
-      
-      const { data: newPlan, error } = await supabase
-        .from('plans')
-        .insert([dbData])
-        .select()
-        .single();
 
-      if (error) throw error;
-      return dbToAppPlan(newPlan);
+      const response = await apiCall('/plans', {
+        method: 'POST',
+        body: JSON.stringify(dbData),
+      });
+      return dbToAppPlan(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
@@ -107,16 +117,12 @@ export const usePlans = () => {
         ...appToDbPlan(data),
         id: data.id
       };
-      
-      const { data: updatedPlan, error } = await supabase
-        .from('plans')
-        .update(dbData)
-        .eq('id', dbData.id)
-        .select()
-        .single();
 
-      if (error) throw error;
-      return dbToAppPlan(updatedPlan);
+      const response = await apiCall(`/plans/${data.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dbData),
+      });
+      return dbToAppPlan(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });

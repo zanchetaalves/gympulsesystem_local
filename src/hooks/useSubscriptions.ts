@@ -1,5 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
+const API_BASE_URL = 'http://localhost:3001/api';
+
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('access_token');
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Erro na requisição';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorData.message || `Erro ${response.status}`;
+    } catch {
+      errorMessage = `Erro ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
 import { Subscription } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,42 +64,8 @@ export const useSubscriptions = () => {
   } = useQuery({
     queryKey: ['subscriptions'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          clients:client_id (*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar matrículas: " + error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      return (data || []).map(dbSubscription => {
-        const subscription = dbToAppSubscription(dbSubscription);
-        
-        // Add client data if available
-        if (dbSubscription.clients) {
-          subscription.client = {
-            id: dbSubscription.clients.id,
-            name: dbSubscription.clients.name,
-            cpf: dbSubscription.clients.cpf,
-            email: dbSubscription.clients.email,
-            phone: dbSubscription.clients.phone,
-            address: dbSubscription.clients.address,
-            birthDate: new Date(dbSubscription.clients.birth_date),
-            createdAt: new Date(dbSubscription.clients.created_at)
-          };
-        }
-        
-        return subscription;
-      });
+      const response = await apiCall('/subscriptions');
+      return response.data.map(dbToAppSubscription);
     },
   });
 
@@ -80,15 +73,11 @@ export const useSubscriptions = () => {
   const createSubscription = useMutation({
     mutationFn: async (data: Partial<Subscription>) => {
       const dbData = appToDbSubscription(data);
-
-      const { data: newSubscription, error } = await supabase
-        .from('subscriptions')
-        .insert([dbData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppSubscription(newSubscription);
+      const response = await apiCall('/subscriptions', {
+        method: 'POST',
+        body: JSON.stringify(dbData),
+      });
+      return dbToAppSubscription(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -114,15 +103,11 @@ export const useSubscriptions = () => {
         id: data.id
       };
 
-      const { data: updatedSubscription, error } = await supabase
-        .from('subscriptions')
-        .update(dbData)
-        .eq('id', dbData.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return dbToAppSubscription(updatedSubscription);
+      const response = await apiCall(`/subscriptions/${data.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dbData),
+      });
+      return dbToAppSubscription(response.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });

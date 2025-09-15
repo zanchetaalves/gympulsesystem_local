@@ -375,8 +375,8 @@ const setupRoutes = () => {
         res.json({ data: result.data[0] });
     });
 
-    // Delete record (protected - admin only)
-    app.delete('/api/:table/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    // Delete record (protected - authenticated users)
+    app.delete('/api/:table/:id', authenticateToken, async (req, res) => {
         const { table, id } = req.params;
 
         const result = await query(`DELETE FROM ${table} WHERE id = $1 RETURNING *`, [id]);
