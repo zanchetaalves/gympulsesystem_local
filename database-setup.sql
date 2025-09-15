@@ -74,9 +74,9 @@ CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date);
 
 -- Insert some sample data
 INSERT INTO plans (name, type, price_brl, description, duration_months) VALUES
-('Plano Básico', 'monthly', 79.90, 'Acesso básico à academia', 1),
-('Plano Premium', 'monthly', 129.90, 'Acesso completo + aulas', 1),
-('Plano Anual', 'yearly', 899.90, 'Plano anual com desconto', 12)
+('Mensal', 'Mensal', 79.90, 'Plano mensal da academia', 1),
+('Anual', 'Anual', 899.90, 'Plano anual com desconto especial', 12),
+('Trimestral', 'Trimestral', 300.00, 'Plano trimestral ideal para iniciantes', 3)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO users (name, email, profile) VALUES

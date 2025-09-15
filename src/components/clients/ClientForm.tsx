@@ -24,12 +24,15 @@ const formSchema = z.object({
   name: z.string({
     required_error: "Nome é obrigatório",
   }).min(3, "Nome deve ter pelo menos 3 caracteres"),
-  cpf: z.string().optional(),
-  email: z.string().email("Email inválido").nullable().optional(),
+  cpf: z.string().optional().transform(val => val === "" ? undefined : val),
+  email: z.union([
+    z.string().email("Email inválido"),
+    z.literal(""),
+  ]).optional().transform(val => val === "" ? undefined : val),
   phone: z.string({
     required_error: "Telefone é obrigatório",
   }).min(10, "Telefone inválido"),
-  address: z.string().optional(),
+  address: z.string().optional().transform(val => val === "" ? undefined : val),
   birthDate: z.date().optional(),
   photoUrl: z.string().nullable().optional(),
 });
@@ -48,8 +51,11 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
   const form = useForm<ClientFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: null,
-      ...defaultValues,
+      name: defaultValues?.name || "",
+      cpf: defaultValues?.cpf || "",
+      email: defaultValues?.email || "",
+      phone: defaultValues?.phone || "",
+      address: defaultValues?.address || "",
       // Use a data diretamente sem ajustes de timezone
       birthDate: defaultValues?.birthDate ? new Date(defaultValues.birthDate) : undefined,
       photoUrl: defaultValues?.photoUrl || null,
@@ -118,7 +124,11 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
                 <FormItem>
                   <FormLabel>Endereço (opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Rua, número, bairro, cidade" {...field} />
+                    <Input
+                      placeholder="Rua, número, bairro, cidade"
+                      {...field}
+                      value={field.value || ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

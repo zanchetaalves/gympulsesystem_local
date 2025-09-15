@@ -30,8 +30,14 @@ export function isAboutToExpire(endDate: Date | string): boolean {
 }
 
 // Calculate age from birthdate
-export function calculateAge(birthDate: Date | string): number {
+export function calculateAge(birthDate: Date | string | null | undefined): number {
+  if (!birthDate) return 0;
+
   const birth = typeof birthDate === 'string' ? new Date(birthDate) : birthDate;
+
+  // Check if date is valid
+  if (isNaN(birth.getTime())) return 0;
+
   const now = new Date();
   let age = now.getFullYear() - birth.getFullYear();
   const monthDiff = now.getMonth() - birth.getMonth();
@@ -42,29 +48,33 @@ export function calculateAge(birthDate: Date | string): number {
 }
 
 // Format CPF: 123.456.789-00
-export function formatCPF(cpf: string): string {
+export function formatCPF(cpf: string | null | undefined): string {
+  if (!cpf) return "-";
+
   // Remove non-numeric characters
   const cleanCpf = cpf.replace(/\D/g, '');
-  
+
   // If not enough digits, return as is
   if (cleanCpf.length !== 11) return cpf;
-  
+
   // Format as xxx.xxx.xxx-xx
   return cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 }
 
 // Format phone: (11) 98765-4321
-export function formatPhone(phone: string): string {
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return "-";
+
   // Remove non-numeric characters
   const cleanPhone = phone.replace(/\D/g, '');
-  
+
   // Check if it's a cell phone (with 9 digits) or landline
   if (cleanPhone.length === 11) {
     return cleanPhone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
   } else if (cleanPhone.length === 10) {
     return cleanPhone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
   }
-  
+
   // Return original if format doesn't match
   return phone;
 }

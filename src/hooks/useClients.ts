@@ -34,18 +34,23 @@ export const appToDbClient = (client: Partial<Client>) => {
     }
   }
 
-  return {
-    name: client.name,
-    cpf: client.cpf,
-    email: client.email,
-    phone: client.phone,
-    address: client.address,
-    birth_date: birthDateStr,
-    photo_url: client.photoUrl,
-    created_at: client.createdAt instanceof Date
+  // Filtra campos undefined para evitar problemas no banco
+  const result: any = {};
+
+  if (client.name !== undefined) result.name = client.name;
+  if (client.cpf !== undefined) result.cpf = client.cpf || null;
+  if (client.email !== undefined) result.email = client.email || null;
+  if (client.phone !== undefined) result.phone = client.phone;
+  if (client.address !== undefined) result.address = client.address || null;
+  if (birthDateStr !== undefined) result.birth_date = birthDateStr;
+  if (client.photoUrl !== undefined) result.photo_url = client.photoUrl;
+  if (client.createdAt !== undefined) {
+    result.created_at = client.createdAt instanceof Date
       ? client.createdAt.toISOString()
-      : client.createdAt,
-  };
+      : client.createdAt;
+  }
+
+  return result;
 };
 
 export const useClients = () => {
@@ -196,18 +201,15 @@ export const useClients = () => {
         }
       }
 
-      const dbData = {
-        ...appToDbClient({
-          ...data,
-          photoUrl
-        }),
-        id: data.id
-      };
+      const dbData = appToDbClient({
+        ...data,
+        photoUrl
+      });
 
       const { data: updatedClient, error } = await supabase
         .from('clients')
         .update(dbData)
-        .eq('id', dbData.id)
+        .eq('id', data.id)
         .select()
         .single();
 

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Calendar, momentLocalizer, View } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "../styles/calendar.css";
 import {
     Dialog,
     DialogContent,
@@ -54,29 +55,38 @@ const calendarStyle = {
 
 const eventStyleGetter = (event: any) => {
     let backgroundColor = '#3b82f6';
+    let borderColor = '#2563eb';
 
     switch (event.status) {
         case 'confirmed':
             backgroundColor = '#10b981';
+            borderColor = '#059669';
             break;
         case 'completed':
             backgroundColor = '#6b7280';
+            borderColor = '#4b5563';
             break;
         case 'cancelled':
             backgroundColor = '#ef4444';
+            borderColor = '#dc2626';
             break;
         default:
             backgroundColor = '#3b82f6';
+            borderColor = '#2563eb';
     }
 
     return {
         style: {
             backgroundColor,
-            borderRadius: '5px',
-            opacity: 0.8,
+            borderRadius: '6px',
+            opacity: 0.9,
             color: 'white',
-            border: '0px',
-            display: 'block'
+            border: `1px solid ${borderColor}`,
+            display: 'block',
+            fontSize: '11px',
+            fontWeight: '500',
+            padding: '2px 6px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
         }
     };
 };
@@ -241,55 +251,57 @@ const Appointments = () => {
                 </Dialog>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Calendário de Compromissos</CardTitle>
+            <Card className="border-border bg-card">
+                <CardHeader className="border-b border-border">
+                    <CardTitle className="text-card-foreground">Calendário de Compromissos</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <Calendar
-                        localizer={localizer}
-                        events={calendarEvents}
-                        startAccessor="start"
-                        endAccessor="end"
-                        style={calendarStyle}
-                        view={view}
-                        onView={setView}
-                        date={date}
-                        onNavigate={setDate}
-                        onSelectEvent={handleSelectEvent}
-                        onSelectSlot={handleSelectSlot}
-                        selectable
-                        eventPropGetter={eventStyleGetter}
-                        culture="pt-BR"
-                        messages={{
-                            next: 'Próximo',
-                            previous: 'Anterior',
-                            today: 'Hoje',
-                            month: 'Mês',
-                            week: 'Semana',
-                            day: 'Dia',
-                            agenda: 'Agenda',
-                            date: 'Data',
-                            time: 'Hora',
-                            event: 'Evento',
-                            noEventsInRange: 'Não há compromissos neste período.',
-                            showMore: (total) => `+${total} mais`,
-                        }}
-                        formats={{
-                            monthHeaderFormat: 'MMMM YYYY',
-                            dayHeaderFormat: 'dddd, DD/MM/YYYY',
-                            dayRangeHeaderFormat: ({ start, end }) =>
-                                `${moment(start).format('DD/MM')} - ${moment(end).format('DD/MM/YYYY')}`,
-                            agendaHeaderFormat: ({ start, end }) =>
-                                `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`,
-                            selectRangeFormat: ({ start, end }) =>
-                                `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`,
-                            agendaDateFormat: 'DD/MM/YYYY',
-                            agendaTimeFormat: 'HH:mm',
-                            agendaTimeRangeFormat: ({ start, end }) =>
-                                `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`,
-                        }}
-                    />
+                <CardContent className="p-4">
+                    <div className="rounded-lg border border-border overflow-hidden bg-background">
+                        <Calendar
+                            localizer={localizer}
+                            events={calendarEvents}
+                            startAccessor="start"
+                            endAccessor="end"
+                            style={calendarStyle}
+                            view={view}
+                            onView={setView}
+                            date={date}
+                            onNavigate={setDate}
+                            onSelectEvent={handleSelectEvent}
+                            onSelectSlot={handleSelectSlot}
+                            selectable
+                            eventPropGetter={eventStyleGetter}
+                            culture="pt-BR"
+                            messages={{
+                                next: 'Próximo',
+                                previous: 'Anterior',
+                                today: 'Hoje',
+                                month: 'Mês',
+                                week: 'Semana',
+                                day: 'Dia',
+                                agenda: 'Agenda',
+                                date: 'Data',
+                                time: 'Hora',
+                                event: 'Evento',
+                                noEventsInRange: 'Não há compromissos neste período.',
+                                showMore: (total) => `+${total} mais`,
+                            }}
+                            formats={{
+                                monthHeaderFormat: 'MMMM YYYY',
+                                dayHeaderFormat: 'dddd, DD/MM/YYYY',
+                                dayRangeHeaderFormat: ({ start, end }) =>
+                                    `${moment(start).format('DD/MM')} - ${moment(end).format('DD/MM/YYYY')}`,
+                                agendaHeaderFormat: ({ start, end }) =>
+                                    `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`,
+                                selectRangeFormat: ({ start, end }) =>
+                                    `${moment(start).format('DD/MM/YYYY')} - ${moment(end).format('DD/MM/YYYY')}`,
+                                agendaDateFormat: 'DD/MM/YYYY',
+                                agendaTimeFormat: 'HH:mm',
+                                agendaTimeRangeFormat: ({ start, end }) =>
+                                    `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`,
+                            }}
+                        />
+                    </div>
                 </CardContent>
             </Card>
 
@@ -308,22 +320,22 @@ const Appointments = () => {
 
                             {selectedAppointment.description && (
                                 <div className="flex items-start space-x-2">
-                                    <FileText className="h-4 w-4 mt-1 text-gray-500" />
+                                    <FileText className="h-4 w-4 mt-1 text-muted-foreground" />
                                     <div>
                                         <p className="text-sm font-medium">Descrição</p>
-                                        <p className="text-sm text-gray-600">{selectedAppointment.description}</p>
+                                        <p className="text-sm text-muted-foreground">{selectedAppointment.description}</p>
                                     </div>
                                 </div>
                             )}
 
                             <div className="flex items-center space-x-2">
-                                <Clock className="h-4 w-4 text-gray-500" />
+                                <Clock className="h-4 w-4 text-muted-foreground" />
                                 <div>
                                     <p className="text-sm font-medium">Data e Hora</p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-sm text-muted-foreground">
                                         {moment(selectedAppointment.appointmentDate).format('DD/MM/YYYY')} às {selectedAppointment.appointmentTime}
                                     </p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-muted-foreground">
                                         Duração: {selectedAppointment.durationMinutes} minutos
                                     </p>
                                 </div>
@@ -331,10 +343,10 @@ const Appointments = () => {
 
                             {selectedAppointment.clientName && (
                                 <div className="flex items-center space-x-2">
-                                    <User className="h-4 w-4 text-gray-500" />
+                                    <User className="h-4 w-4 text-muted-foreground" />
                                     <div>
                                         <p className="text-sm font-medium">Cliente</p>
-                                        <p className="text-sm text-gray-600">{selectedAppointment.clientName}</p>
+                                        <p className="text-sm text-muted-foreground">{selectedAppointment.clientName}</p>
                                     </div>
                                 </div>
                             )}

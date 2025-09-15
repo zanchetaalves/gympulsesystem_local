@@ -1,0 +1,278 @@
+/* Calendar Dark Theme Improvements */
+
+/* Base calendar styles for better visibility */
+.rbc-calendar {
+    @apply bg-background text-foreground;
+}
+
+/* Header styles */
+.rbc-header {
+    @apply bg-muted/50 text-foreground border-border;
+    border-bottom: 1px solid hsl(var(--border));
+    padding: 8px 12px;
+    font-weight: 500;
+}
+
+/* Today's date highlight */
+.rbc-today {
+    @apply bg-primary/10;
+}
+
+/* Month view styles */
+.rbc-month-view {
+    @apply bg-background border-border;
+}
+
+/* Date cells */
+.rbc-date-cell {
+    @apply text-foreground;
+    padding: 4px 8px;
+}
+
+.rbc-date-cell>a,
+.rbc-date-cell>a:active,
+.rbc-date-cell>a:visited {
+    @apply text-foreground no-underline;
+}
+
+.rbc-date-cell>a:hover {
+    @apply text-primary;
+}
+
+/* Off-range dates (previous/next month) */
+.rbc-off-range {
+    @apply text-muted-foreground;
+}
+
+.rbc-off-range-bg {
+    @apply bg-muted/30;
+}
+
+/* Calendar grid */
+.rbc-month-row,
+.rbc-day-bg {
+    @apply border-border;
+    border-color: hsl(var(--border));
+}
+
+/* Event styles improvements */
+.rbc-event {
+    @apply border-0 rounded-md text-white font-medium;
+    padding: 2px 6px;
+    font-size: 11px;
+}
+
+.rbc-event:focus,
+.rbc-event:hover {
+    @apply opacity-90;
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 1px;
+}
+
+.rbc-event-label {
+    @apply text-xs;
+}
+
+/* Toolbar styles */
+.rbc-toolbar {
+    @apply bg-background text-foreground border-b border-border;
+    padding: 12px 16px;
+    margin-bottom: 0;
+}
+
+.rbc-toolbar button {
+    @apply bg-background text-foreground border border-border hover:bg-muted;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.rbc-toolbar button:hover {
+    @apply bg-muted text-foreground;
+}
+
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button.rbc-active:hover {
+    @apply bg-primary text-primary-foreground;
+}
+
+.rbc-toolbar-label {
+    @apply text-foreground font-semibold text-lg;
+}
+
+/* Time slot styles for week/day view */
+.rbc-time-slot {
+    @apply border-border text-muted-foreground;
+    border-color: hsl(var(--border));
+}
+
+.rbc-time-header {
+    @apply bg-muted/30 border-border;
+}
+
+.rbc-time-content {
+    @apply border-border;
+}
+
+.rbc-timeslot-group {
+    @apply border-border;
+    border-color: hsl(var(--border));
+}
+
+/* Agenda view styles */
+.rbc-agenda-view {
+    @apply bg-background;
+}
+
+.rbc-agenda-view table.rbc-agenda-table {
+    @apply bg-background;
+}
+
+.rbc-agenda-view .rbc-agenda-table tbody>tr>td {
+    @apply text-foreground border-border;
+    border-color: hsl(var(--border));
+}
+
+.rbc-agenda-view .rbc-agenda-table .rbc-agenda-time-cell {
+    @apply text-muted-foreground;
+}
+
+/* Show more link */
+.rbc-show-more {
+    @apply text-primary hover:text-primary/80;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* Selected slot */
+.rbc-slot-selection {
+    @apply bg-primary/20;
+}
+
+/* Current time indicator */
+.rbc-current-time-indicator {
+    @apply bg-destructive;
+    height: 2px;
+}
+
+/* Selection styles */
+.rbc-slot-selecting {
+    @apply bg-primary/30;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .rbc-toolbar {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .rbc-toolbar button {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .rbc-toolbar-label {
+        font-size: 16px;
+    }
+
+    .rbc-event {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+}
+
+/* Dark theme specific overrides */
+@media (prefers-color-scheme: dark) {
+    .rbc-calendar {
+        color: hsl(var(--foreground));
+        background: hsl(var(--background));
+    }
+
+    .rbc-header {
+        background: hsl(var(--muted) / 0.5);
+        color: hsl(var(--foreground));
+        border-bottom-color: hsl(var(--border));
+    }
+
+    .rbc-month-row,
+    .rbc-day-bg {
+        border-color: hsl(var(--border));
+    }
+
+    .rbc-today {
+        background: hsl(var(--primary) / 0.1);
+    }
+}
+
+/* Force dark mode when .dark class is present */
+.dark .rbc-calendar {
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+}
+
+.dark .rbc-header {
+    background: hsl(var(--muted) / 0.5);
+    color: hsl(var(--foreground));
+    border-bottom-color: hsl(var(--border));
+}
+
+.dark .rbc-month-row,
+.dark .rbc-day-bg {
+    border-color: hsl(var(--border));
+}
+
+.dark .rbc-today {
+    background: hsl(var(--primary) / 0.1);
+}
+
+.dark .rbc-off-range {
+    color: hsl(var(--muted-foreground));
+}
+
+.dark .rbc-off-range-bg {
+    background: hsl(var(--muted) / 0.3);
+}
+
+.dark .rbc-toolbar {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-bottom-color: hsl(var(--border));
+}
+
+.dark .rbc-toolbar button {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}
+
+.dark .rbc-toolbar button:hover {
+    background: hsl(var(--muted));
+}
+
+.dark .rbc-toolbar button.rbc-active {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.dark .rbc-date-cell>a {
+    color: hsl(var(--foreground));
+}
+
+.dark .rbc-date-cell>a:hover {
+    color: hsl(var(--primary));
+}
+
+.dark .rbc-time-slot {
+    border-color: hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+}
+
+.dark .rbc-agenda-view .rbc-agenda-table tbody>tr>td {
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}

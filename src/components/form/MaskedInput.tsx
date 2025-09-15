@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 
 interface MaskedInputProps extends Omit<React.ComponentProps<typeof Input>, "onChange"> {
   mask: string;
-  value: string;
+  value: string | null | undefined;
   onChange: (value: string) => void;
 }
 
@@ -17,19 +17,19 @@ export function MaskedInput({ mask, value, onChange, ...props }: MaskedInputProp
   }, [value, mask]);
 
   // Função para aplicar a máscara ao texto
-  const applyMask = (text: string, mask: string): string => {
+  const applyMask = (text: string | null | undefined, mask: string): string => {
     if (!text) return "";
-    
+
     // Remove todos os caracteres não numéricos
     const numericValue = text.replace(/\D/g, "");
-    
+
     let result = "";
     let numericIndex = 0;
-    
+
     // Percorre a máscara e substitui os caracteres 0 pelos números do valor
     for (let i = 0; i < mask.length; i++) {
       if (numericIndex >= numericValue.length) break;
-      
+
       if (mask[i] === "0") {
         result += numericValue[numericIndex];
         numericIndex++;
@@ -37,12 +37,13 @@ export function MaskedInput({ mask, value, onChange, ...props }: MaskedInputProp
         result += mask[i];
       }
     }
-    
+
     return result;
   };
 
   // Extrai apenas os números do valor mascarado
-  const extractNumeric = (maskedText: string): string => {
+  const extractNumeric = (maskedText: string | null | undefined): string => {
+    if (!maskedText) return "";
     return maskedText.replace(/\D/g, "");
   };
 
@@ -50,7 +51,7 @@ export function MaskedInput({ mask, value, onChange, ...props }: MaskedInputProp
     const inputValue = e.target.value;
     const numericValue = extractNumeric(inputValue);
     const newMaskedValue = applyMask(numericValue, mask);
-    
+
     setMaskedValue(newMaskedValue);
     onChange(numericValue);
   };

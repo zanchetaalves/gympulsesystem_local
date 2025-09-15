@@ -42,23 +42,23 @@ const Clients = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  
+
   // Usando hooks personalizados
-  const { 
-    clients, 
+  const {
+    clients,
     isLoading: isLoadingClients,
     createClient,
     updateClient,
     deleteClient
   } = useClients();
-  
+
   const { subscriptions } = useSubscriptions();
 
   const filteredClients = clients.filter(
     (client) =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.cpf.includes(searchTerm) ||
-      client.phone.includes(searchTerm)
+      (client.cpf && client.cpf.includes(searchTerm)) ||
+      (client.phone && client.phone.includes(searchTerm))
   );
 
   const getClientSubscriptionStatus = (clientId: string) => {
@@ -193,14 +193,13 @@ const Clients = () => {
                         <TableCell>{formatCPF(client.cpf)}</TableCell>
                         <TableCell>{formatPhone(client.phone)}</TableCell>
                         <TableCell>{client.email || "-"}</TableCell>
-                        <TableCell>{calculateAge(client.birthDate)} anos</TableCell>
+                        <TableCell>{calculateAge(client.birthDate) || "-"} {calculateAge(client.birthDate) ? "anos" : ""}</TableCell>
                         <TableCell>
                           <div
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              getClientSubscriptionStatus(client.id) === "Ativo"
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getClientSubscriptionStatus(client.id) === "Ativo"
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
-                            }`}
+                              }`}
                           >
                             {getClientSubscriptionStatus(client.id)}
                           </div>
@@ -212,8 +211,8 @@ const Clients = () => {
                             if (!open) setSelectedClient(null);
                           }}>
                             <DialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => setSelectedClient(client)}
                               >
@@ -225,25 +224,25 @@ const Clients = () => {
                                 <DialogTitle>Editar Cliente</DialogTitle>
                               </DialogHeader>
                               {selectedClient && (
-                                <ClientForm 
-                                  onSubmit={handleEditClient} 
-                                  isLoading={updateClient.isPending} 
+                                <ClientForm
+                                  onSubmit={handleEditClient}
+                                  isLoading={updateClient.isPending}
                                   defaultValues={selectedClient}
                                 />
                               )}
                             </DialogContent>
                           </Dialog>
 
-                          <AlertDialog 
+                          <AlertDialog
                             open={deleteDialogOpen && selectedClient?.id === client.id}
                             onOpenChange={(open) => {
                               setDeleteDialogOpen(open);
                               if (!open) setSelectedClient(null);
                             }}
                           >
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => {
                                 setSelectedClient(client);
                                 setDeleteDialogOpen(true);
@@ -260,7 +259,7 @@ const Clients = () => {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   onClick={handleDeleteClient}
                                   disabled={deleteClient.isPending}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

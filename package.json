@@ -17,7 +17,9 @@
     "setup:plan-types": "node scripts/setup-plan-types.js",
     "update:payments": "node scripts/update-payments-table.js",
     "setup:appointments": "node scripts/setup-appointments.js",
-    "migrate:clients": "node scripts/migrate-client-table.js"
+    "migrate:clients": "node scripts/migrate-client-table.js",
+    "update:plans": "node scripts/update-plans.js",
+    "clean:plans": "node scripts/clean-plans.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
