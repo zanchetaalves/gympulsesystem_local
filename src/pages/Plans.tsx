@@ -16,6 +16,7 @@ import { PlanForm } from "@/components/plans/PlanForm";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -54,9 +55,14 @@ const Plans = () => {
   };
 
   const handleEditPlan = async (data: any) => {
-    await updatePlan.mutateAsync(data);
-    setEditDialogOpen(false);
-    setSelectedPlan(null);
+    try {
+      await updatePlan.mutateAsync(data);
+      setEditDialogOpen(false);
+      setSelectedPlan(null);
+    } catch (error) {
+      // Deixa o dialog aberto em caso de erro
+      console.error('Erro ao editar plano:', error);
+    }
   };
 
   const handleDeletePlan = async () => {
@@ -73,15 +79,35 @@ const Plans = () => {
   };
 
   const openDeleteDialog = (plan: Plan) => {
+    // Fechar outros dialogs antes de abrir o de exclusão
+    setEditDialogOpen(false);
+    setCreateDialogOpen(false);
     setSelectedPlan(plan);
     setDeleteDialogOpen(true);
+  };
+
+  const openEditDialog = (plan: Plan) => {
+    // Fechar outros dialogs antes de abrir o de edição
+    setCreateDialogOpen(false);
+    setDeleteDialogOpen(false);
+    setSelectedPlan(plan);
+    setEditDialogOpen(true);
   };
 
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Planos</h1>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <Dialog 
+          open={createDialogOpen} 
+          onOpenChange={(open) => {
+            setCreateDialogOpen(open);
+            if (!open) {
+              // Pequeno delay para evitar conflitos de estado
+              setTimeout(() => setSelectedPlan(null), 100);
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -91,6 +117,9 @@ const Plans = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Cadastrar Novo Plano</DialogTitle>
+              <DialogDescription>
+                Preencha as informações abaixo para criar um novo plano.
+              </DialogDescription>
             </DialogHeader>
             <PlanForm 
               onSubmit={handleCreatePlan} 
@@ -150,14 +179,17 @@ const Plans = () => {
                             open={editDialogOpen && selectedPlan?.id === plan.id} 
                             onOpenChange={(open) => {
                               setEditDialogOpen(open);
-                              if (!open) setSelectedPlan(null);
+                              if (!open) {
+                                // Pequeno delay para evitar conflitos de estado
+                                setTimeout(() => setSelectedPlan(null), 100);
+                              }
                             }}
                           >
                             <DialogTrigger asChild>
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => setSelectedPlan(plan)}
+                                onClick={() => openEditDialog(plan)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -165,6 +197,9 @@ const Plans = () => {
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Editar Plano</DialogTitle>
+                              <DialogDescription>
+                                Modifique as informações do plano conforme necessário.
+                              </DialogDescription>
                             </DialogHeader>
                             {selectedPlan && (
                               <PlanForm 
@@ -195,7 +230,16 @@ const Plans = () => {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            // Pequeno delay para evitar conflitos de estado
+            setTimeout(() => setSelectedPlan(null), 100);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Plano</AlertDialogTitle>
