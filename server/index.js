@@ -107,7 +107,7 @@ const setupRoutes = () => {
         }
     });
 
-    // Plan types management (admin only)
+    // Plan types management (authenticated users)
     app.get('/api/plan_types', authenticateToken, async (req, res) => {
         const { orderBy = 'name', ascending = 'true' } = req.query;
 
@@ -119,7 +119,7 @@ const setupRoutes = () => {
         }
     });
 
-    app.post('/api/plan_types', authenticateToken, requireRole(['admin']), async (req, res) => {
+    app.post('/api/plan_types', authenticateToken, async (req, res) => {
         const data = req.body;
 
         try {
@@ -133,7 +133,7 @@ const setupRoutes = () => {
         }
     });
 
-    app.put('/api/plan_types/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    app.put('/api/plan_types/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const data = req.body;
 
@@ -147,7 +147,7 @@ const setupRoutes = () => {
         }
     });
 
-    app.delete('/api/plan_types/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    app.delete('/api/plan_types/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
 
         try {

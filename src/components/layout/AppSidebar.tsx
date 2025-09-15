@@ -59,12 +59,11 @@ export function AppSidebar() {
       icon: LayoutList,
       url: "/planos",
     },
-    // Only show Plan Types menu for admin user
-    ...(isAdmin ? [{
+    {
       title: "Tipos de Planos",
       icon: LayoutList,
       url: "/tipos-planos",
-    }] : []),
+    },
     {
       title: "Compromissos",
       icon: Calendar,
