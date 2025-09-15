@@ -39,10 +39,10 @@ const Users = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AuthUser | null>(null);
-  
+
   // Using the updated hook to manage users
-  const { 
-    users, 
+  const {
+    users,
     isLoading: isLoadingUsers,
     createUser,
     updateUser,
@@ -50,10 +50,7 @@ const Users = () => {
     hasAccess
   } = useUsers();
 
-  // If the user doesn't have access, redirect to home
-  if (!hasAccess) {
-    return <Navigate to="/" />;
-  }
+
 
   const handleCreateUser = async (data: any) => {
     createUser.mutate({
@@ -69,14 +66,12 @@ const Users = () => {
 
   const handleEditUser = async (data: any) => {
     if (!selectedUser) return;
-    
+
     updateUser.mutate({
       id: selectedUser.id,
       email: data.email,
-      metadata: {
-        ...selectedUser.user_metadata,
-        name: data.name
-      }
+      name: data.name,
+      role: data.role || selectedUser.role
     }, {
       onSuccess: () => {
         setEditDialogOpen(false);
@@ -110,9 +105,9 @@ const Users = () => {
             <DialogHeader>
               <DialogTitle>Criar Novo Usuário</DialogTitle>
             </DialogHeader>
-            <UserForm 
-              onSubmit={handleCreateUser} 
-              isLoading={createUser.isPending} 
+            <UserForm
+              onSubmit={handleCreateUser}
+              isLoading={createUser.isPending}
             />
           </DialogContent>
         </Dialog>
@@ -164,8 +159,8 @@ const Users = () => {
                           if (!open) setSelectedUser(null);
                         }}>
                           <DialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => setSelectedUser(user)}
                             >
@@ -177,13 +172,14 @@ const Users = () => {
                               <DialogTitle>Editar Usuário</DialogTitle>
                             </DialogHeader>
                             {selectedUser && (
-                              <UserForm 
-                                onSubmit={handleEditUser} 
-                                isLoading={updateUser.isPending} 
+                              <UserForm
+                                onSubmit={handleEditUser}
+                                isLoading={updateUser.isPending}
                                 defaultValues={{
                                   id: selectedUser.id,
-                                  name: selectedUser.user_metadata?.name || '',
+                                  name: selectedUser.name || '',
                                   email: selectedUser.email,
+                                  role: selectedUser.role,
                                 }}
                                 isEditing
                               />
@@ -191,16 +187,16 @@ const Users = () => {
                           </DialogContent>
                         </Dialog>
 
-                        <AlertDialog 
+                        <AlertDialog
                           open={deleteDialogOpen && selectedUser?.id === user.id}
                           onOpenChange={(open) => {
                             setDeleteDialogOpen(open);
                             if (!open) setSelectedUser(null);
                           }}
                         >
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                               setSelectedUser(user);
                               setDeleteDialogOpen(true);
@@ -217,7 +213,7 @@ const Users = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction 
+                              <AlertDialogAction
                                 onClick={handleDeleteUser}
                                 disabled={deleteUser.isPending}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

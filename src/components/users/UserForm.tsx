@@ -16,14 +16,19 @@ import { Button } from "@/components/ui/button";
 
 const formSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
+  name: z.string({
+    required_error: "Nome é obrigatório",
+  }).min(3, "Nome deve ter pelo menos 3 caracteres"),
+  email: z.string({
+    required_error: "Email é obrigatório",
+  }).email("Email inválido"),
   password: z.string()
     .min(6, "Senha deve ter pelo menos 6 caracteres")
     .optional()
     .refine(val => val === undefined || val === '' || val?.length >= 6, {
       message: "Senha deve ter pelo menos 6 caracteres",
     }),
+  role: z.string().optional(),
 });
 
 type UserFormData = z.infer<typeof formSchema>;
@@ -89,6 +94,24 @@ export function UserForm({ onSubmit, isLoading, defaultValues, isEditing = false
             )}
           />
         )}
+
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Função</FormLabel>
+              <FormControl>
+                <select {...field} className="w-full p-2 border rounded">
+                  <option value="user">Usuário</option>
+                  <option value="staff">Funcionário</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Salvando..." : "Salvar"}

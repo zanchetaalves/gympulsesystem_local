@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plan } from "@/types";
+import { usePlanTypes } from "@/hooks/usePlanTypes";
 import {
   Form,
   FormControl,
@@ -26,13 +27,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(1, "Nome é obrigatório"),
-  type: z.enum(["Mensal", "Trimestral", "Anual"], {
+  name: z.string({
+    required_error: "Nome é obrigatório",
+  }).min(1, "Nome é obrigatório"),
+  type: z.string({
     required_error: "Tipo é obrigatório",
-  }),
-  priceBrl: z.number().min(0, "Preço deve ser maior que zero"),
+  }).min(1, "Tipo é obrigatório"),
+  priceBrl: z.number({
+    required_error: "Preço é obrigatório",
+  }).min(0, "Preço deve ser maior que zero"),
   description: z.string().optional(),
-  durationMonths: z.number().min(1, "Duração deve ser maior que zero"),
+  durationMonths: z.number({
+    required_error: "Duração é obrigatória",
+  }).min(1, "Duração deve ser maior que zero"),
   active: z.boolean().default(true),
 });
 
@@ -43,6 +50,8 @@ interface PlanFormProps {
 }
 
 export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) {
+  const { planTypes } = usePlanTypes();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -81,9 +90,11 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Mensal">Mensal</SelectItem>
-                  <SelectItem value="Trimestral">Trimestral</SelectItem>
-                  <SelectItem value="Anual">Anual</SelectItem>
+                  {planTypes.map((planType) => (
+                    <SelectItem key={planType.id} value={planType.name}>
+                      {planType.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -98,9 +109,9 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
             <FormItem>
               <FormLabel>Preço (R$)</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  {...field} 
+                <Input
+                  type="number"
+                  {...field}
                   onChange={e => field.onChange(Number(e.target.value))}
                 />
               </FormControl>
@@ -130,9 +141,9 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
             <FormItem>
               <FormLabel>Duração (meses)</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  {...field} 
+                <Input
+                  type="number"
+                  {...field}
                   onChange={e => field.onChange(Number(e.target.value))}
                 />
               </FormControl>

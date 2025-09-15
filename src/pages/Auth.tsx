@@ -1,120 +1,159 @@
 
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const loginSchema = z.object({
+  email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
+  password: z.string().min(1, "Senha é obrigatória").min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { session } = useAuth();
 
-  // Redirect if logged in
-  if (session) {
-    return <Navigate to="/" replace />;
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate('/');
+    return null;
   }
 
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast.error("Erro ao fazer login", {
-        description: error.message,
-      });
-    } else {
-      toast.success("Login realizado com sucesso!");
+  const handleLogin = async (data: LoginFormData) => {
+    try {
+      setIsLoading(true);
+      await login(data.email, data.password);
+      navigate('/');
+    } catch (error) {
+      // Error handled by useAuth hook
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    setIsLoading(false);
-  }
-
-  async function handleSignUp(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      }
-    });
-
-    if (error) {
-      toast.error("Erro ao criar conta", {
-        description: error.message,
-      });
-    } else {
-      toast.success("Conta criada com sucesso!");
+  const handleQuickLogin = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      await login(email, password);
+      navigate('/');
+    } catch (error) {
+      // Error handled by useAuth hook
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  }
+  };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
-      style={{ 
-        backgroundImage: "url('https://dicasef.com.br/wp-content/uploads/2024/07/muai-yhay-1.jpg')"
-      }}
-    >
-      <div className="absolute inset-0 bg-black opacity-50"></div>
-      <Card className="w-[350px] z-10 border-0 shadow-xl bg-white/90 backdrop-blur-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">GymPulse</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-white/70"
-              />
-              <Input
-                type="password"
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-white/70"
-              />
-            </div>
-            <div className="space-y-2">
-              <Button 
-                type="submit" 
-                className="w-full bg-gym-primary hover:bg-gym-secondary" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Carregando..." : "Entrar"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full border-gym-primary text-gym-primary hover:bg-gym-light hover:text-gym-primary"
-                onClick={handleSignUp}
-                disabled={isLoading}
-              >
-                Criar conta
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Gym Pulse</h1>
+          <p className="text-gray-600 mt-2">Sistema de Gerenciamento de Academia</p>
+        </div>
+
+        <div className="w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>Fazer Login</CardTitle>
+              <CardDescription>
+                Entre com suas credenciais para acessar o sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="seu@email.com"
+                            type="email"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Sua senha"
+                            type="password"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Entrando...' : 'Entrar'}
+                  </Button>
+                </form>
+              </Form>
+
+              <div className="mt-6 space-y-2">
+                <p className="text-sm text-gray-600 text-center">Contas de teste:</p>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleQuickLogin('admin@gympulse.com', 'admin123')}
+                    disabled={isLoading}
+                  >
+                    Admin (admin@gympulse.com)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleQuickLogin('recepcao@gympulse.com', 'recepcao123')}
+                    disabled={isLoading}
+                  >
+                    Recepção (recepcao@gympulse.com)
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

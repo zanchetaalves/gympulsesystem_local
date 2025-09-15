@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -53,42 +52,42 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 216 34% 17%;
 
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 213 31% 91%;
     --sidebar-primary: 210 40% 98%;
     --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent: 215 27.9% 16.9%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    --sidebar-border: 215 27.9% 16.9%;
+    --sidebar-ring: 216 34% 17%;
 
     /* Gym specific colors dark theme */
     --gym-primary: 199 85% 45%;
@@ -106,5 +105,85 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Melhorias específicas para tema dark */
+@layer components {
+
+  /* Select dropdown melhorado para tema dark */
+  .dark [data-radix-select-content] {
+    background-color: hsl(215 27.9% 16.9%);
+    border: 1px solid hsl(215 27.9% 16.9%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark [data-radix-select-item] {
+    color: hsl(213 31% 91%);
+  }
+
+  .dark [data-radix-select-item]:hover {
+    background-color: hsl(215 27.9% 22%);
+    color: hsl(213 31% 91%);
+  }
+
+  .dark [data-radix-select-item][data-highlighted] {
+    background-color: hsl(215 27.9% 22%);
+    color: hsl(213 31% 91%);
+  }
+
+  .dark [data-radix-select-item][data-state="checked"] {
+    background-color: hsl(215 27.9% 25%);
+    color: hsl(213 31% 91%);
+  }
+
+  /* Input melhorado para tema dark */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"] {
+    background-color: hsl(215 27.9% 16.9%);
+    border: 1px solid hsl(215 27.9% 25%);
+    color: hsl(213 31% 91%);
+  }
+
+  .dark input[type="text"]:focus,
+  .dark input[type="email"]:focus,
+  .dark input[type="password"]:focus {
+    border-color: hsl(216 34% 25%);
+    box-shadow: 0 0 0 2px hsl(216 34% 17%);
+  }
+
+  .dark input::placeholder {
+    color: hsl(217.9 10.6% 64.9%);
+  }
+
+  /* Card melhorado para tema dark */
+  .dark [data-component="card"] {
+    background-color: hsl(224 71% 4%);
+    border: 1px solid hsl(215 27.9% 16.9%);
+  }
+
+  /* Botão melhorado para tema dark */
+  .dark button[data-variant="outline"] {
+    background-color: hsl(215 27.9% 16.9%);
+    border: 1px solid hsl(215 27.9% 25%);
+    color: hsl(213 31% 91%);
+  }
+
+  .dark button[data-variant="outline"]:hover {
+    background-color: hsl(215 27.9% 22%);
+    border-color: hsl(215 27.9% 30%);
+  }
+
+  /* Dialog/Modal melhorado para tema dark */
+  .dark [data-radix-dialog-content] {
+    background-color: hsl(224 71% 4%);
+    border: 1px solid hsl(215 27.9% 16.9%);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Label melhorado para tema dark */
+  .dark label {
+    color: hsl(213 31% 91%);
   }
 }

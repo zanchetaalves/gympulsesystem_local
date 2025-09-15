@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, withAdminAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { PrivateRoute } from "@/components/PrivateRoute";
 import { MainLayout } from "./components/layout/MainLayout";
@@ -17,8 +17,13 @@ import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Plans from "./pages/Plans";
+import PlanTypes from "./pages/PlanTypes";
+import Appointments from "./pages/Appointments";
 
 const queryClient = new QueryClient();
+
+// Component to wrap Users with admin protection
+const AdminOnlyUsers = withAdminAuth(Users);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,7 +50,7 @@ const App = () => (
                 element={
                   <PrivateRoute>
                     <MainLayout>
-                      <Users />
+                      <AdminOnlyUsers />
                     </MainLayout>
                   </PrivateRoute>
                 }
@@ -96,6 +101,26 @@ const App = () => (
                   <PrivateRoute>
                     <MainLayout>
                       <Plans />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/tipos-planos"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <PlanTypes />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/compromissos"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <Appointments />
                     </MainLayout>
                   </PrivateRoute>
                 }

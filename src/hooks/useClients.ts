@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { createErrorHandler, formatDatabaseError } from "@/lib/error-utils";
 
 // Adapter functions para converter entre os formatos do banco e da aplicação
 export const dbToAppClient = (dbClient: any): Client => ({
@@ -50,6 +51,7 @@ export const appToDbClient = (client: Partial<Client>) => {
 export const useClients = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const handleError = createErrorHandler('Gestão de Clientes');
 
   // Query para buscar clientes
   const {
@@ -65,9 +67,10 @@ export const useClients = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
+        const errorMessage = formatDatabaseError(error);
         toast({
-          title: "Erro",
-          description: "Erro ao carregar clientes: " + error.message,
+          title: "Erro ao Carregar Clientes",
+          description: errorMessage,
           variant: "destructive",
         });
         throw error;
@@ -82,41 +85,46 @@ export const useClients = () => {
     mutationFn: async (data: Partial<Client>) => {
       // Handle photo data if it exists (data URL format)
       let photoUrl = null;
-      
+
       if (data.photoUrl && data.photoUrl.startsWith('data:image')) {
         try {
           // Convert base64 to blob
           const res = await fetch(data.photoUrl);
           const blob = await res.blob();
-          
+
           // Generate a unique filename
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
           const filePath = `${fileName}.jpg`;
-          
+
           // Upload to Supabase Storage
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('client-photos')
             .upload(filePath, blob, {
               contentType: 'image/jpeg',
             });
-          
+
           if (uploadError) throw uploadError;
-          
+
           // Get public URL
           const { data: urlData } = supabase.storage
             .from('client-photos')
             .getPublicUrl(filePath);
-            
+
           photoUrl = urlData.publicUrl;
         } catch (error: any) {
           console.error("Error uploading photo:", error);
+          toast({
+            title: "Aviso",
+            description: "Não foi possível enviar a foto. Cliente será salvo sem foto.",
+            variant: "default",
+          });
           // Continue without the photo if there's an error
         }
       } else if (data.photoUrl) {
         // If it's already a URL, keep it
         photoUrl = data.photoUrl;
       }
-      
+
       const dbData = appToDbClient({
         ...data,
         photoUrl
@@ -128,7 +136,10 @@ export const useClients = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        const errorMessage = formatDatabaseError(error);
+        throw new Error(errorMessage);
+      }
       return dbToAppClient(newClient);
     },
     onSuccess: () => {
@@ -139,9 +150,10 @@ export const useClients = () => {
       });
     },
     onError: (error: any) => {
+      const errorMessage = handleError(error);
       toast({
-        title: "Erro",
-        description: "Erro ao cadastrar cliente: " + error.message,
+        title: "Erro ao Cadastrar Cliente",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -152,38 +164,38 @@ export const useClients = () => {
     mutationFn: async (data: Partial<Client>) => {
       // Handle photo data if it exists and has changed (data URL format)
       let photoUrl = data.photoUrl;
-      
+
       if (data.photoUrl && data.photoUrl.startsWith('data:image')) {
         try {
           // Convert base64 to blob
           const res = await fetch(data.photoUrl);
           const blob = await res.blob();
-          
+
           // Generate a unique filename
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
           const filePath = `${fileName}.jpg`;
-          
+
           // Upload to Supabase Storage
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('client-photos')
             .upload(filePath, blob, {
               contentType: 'image/jpeg',
             });
-          
+
           if (uploadError) throw uploadError;
-          
+
           // Get public URL
           const { data: urlData } = supabase.storage
             .from('client-photos')
             .getPublicUrl(filePath);
-            
+
           photoUrl = urlData.publicUrl;
         } catch (error: any) {
           console.error("Error uploading photo:", error);
           // Continue with the old photo if there's an error
         }
       }
-      
+
       const dbData = {
         ...appToDbClient({
           ...data,
@@ -210,9 +222,10 @@ export const useClients = () => {
       });
     },
     onError: (error: any) => {
+      const errorMessage = handleError(error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar cliente: " + error.message,
+        title: "Erro ao Atualizar Cliente",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -237,9 +250,10 @@ export const useClients = () => {
       });
     },
     onError: (error: any) => {
+      const errorMessage = handleError(error);
       toast({
-        title: "Erro",
-        description: "Erro ao excluir cliente: " + error.message,
+        title: "Erro ao Excluir Cliente",
+        description: errorMessage,
         variant: "destructive",
       });
     },

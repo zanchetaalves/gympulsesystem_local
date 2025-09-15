@@ -21,14 +21,16 @@ import { PhoneInput } from "@/components/form/PhoneInput";
 
 const formSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  cpf: z.string().min(11, "CPF inválido"),
-  email: z.string().email("Email inválido").nullable(),
-  phone: z.string().min(10, "Telefone inválido"),
-  address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
-  birthDate: z.date({
-    required_error: "Data de nascimento é obrigatória",
-  }),
+  name: z.string({
+    required_error: "Nome é obrigatório",
+  }).min(3, "Nome deve ter pelo menos 3 caracteres"),
+  cpf: z.string().optional(),
+  email: z.string().email("Email inválido").nullable().optional(),
+  phone: z.string({
+    required_error: "Telefone é obrigatório",
+  }).min(10, "Telefone inválido"),
+  address: z.string().optional(),
+  birthDate: z.date().optional(),
   photoUrl: z.string().nullable().optional(),
 });
 
@@ -86,19 +88,19 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               )}
             />
 
-            <CPFInput name="cpf" />
+            <CPFInput name="cpf" label="CPF (opcional)" />
 
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email (opcional)</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="email@exemplo.com" 
-                      type="email" 
-                      {...field} 
+                    <Input
+                      placeholder="email@exemplo.com"
+                      type="email"
+                      {...field}
                       value={field.value || ''}
                     />
                   </FormControl>
@@ -114,7 +116,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Endereço</FormLabel>
+                  <FormLabel>Endereço (opcional)</FormLabel>
                   <FormControl>
                     <Input placeholder="Rua, número, bairro, cidade" {...field} />
                   </FormControl>
@@ -123,18 +125,18 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               )}
             />
 
-            <DateInput name="birthDate" label="Data de Nascimento" />
+            <DateInput name="birthDate" label="Data de Nascimento (opcional)" />
           </div>
-          
+
           <div>
             <FormField
               control={form.control}
               name="photoUrl"
               render={() => (
                 <FormItem>
-                  <FormLabel>Foto</FormLabel>
+                  <FormLabel>Foto (opcional)</FormLabel>
                   <FormControl>
-                    <WebcamCapture 
+                    <WebcamCapture
                       onCapture={handlePhotoCapture}
                       initialImage={defaultValues?.photoUrl || null}
                     />

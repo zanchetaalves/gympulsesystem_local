@@ -1,9 +1,8 @@
 
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  Sidebar, 
-  SidebarContent, 
+import {
+  Sidebar,
+  SidebarContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
@@ -11,29 +10,22 @@ import {
   SidebarFooter,
   SidebarGroup
 } from "@/components/ui/sidebar";
-import { 
-  Users, 
-  User, 
-  FileText, 
-  CreditCard, 
-  BarChart2, 
+import {
+  Users,
+  User,
+  FileText,
+  CreditCard,
+  BarChart2,
   Calendar,
   LayoutList,
-  LogOut,
-  Database
+  LogOut
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 export function AppSidebar() {
   const navigate = useNavigate();
-  const [isDownloading, setIsDownloading] = useState(false);
-  const { user } = useAuth();
-  
-  // Check if user has admin access
-  const isAdmin = user?.email === "zancheta2010@gmail.com";
-  
+  const { user, logout, isAdmin, isStaff } = useAuth();
+
   // Menu items
   const menuItems = [
     {
@@ -67,63 +59,30 @@ export function AppSidebar() {
       icon: LayoutList,
       url: "/planos",
     },
+    // Only show Plan Types menu for admin user
+    ...(isAdmin ? [{
+      title: "Tipos de Planos",
+      icon: LayoutList,
+      url: "/tipos-planos",
+    }] : []),
+    {
+      title: "Compromissos",
+      icon: Calendar,
+      url: "/compromissos",
+    },
     {
       title: "Relatórios",
-      icon: Calendar,
+      icon: BarChart2,
       url: "/relatorios",
     },
   ];
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      toast.success("Logout realizado com sucesso");
+      await logout();
       navigate("/auth");
     } catch (error) {
-      toast.error("Erro ao fazer logout");
-    }
-  };
-
-  const handleDownloadBackup = async () => {
-    try {
-      setIsDownloading(true);
-      // Get the current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error("Você precisa estar autenticado para baixar o backup");
-        navigate("/auth");
-        return;
-      }
-      
-      // Call the function with authorization header containing the access token
-      const { data, error } = await supabase.functions.invoke("generate-backup", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Create a blob and download it
-      const blob = new Blob([data], { type: 'application/sql' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `gympulse_backup_${new Date().toISOString().split('T')[0]}.sql`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success("Backup baixado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao baixar o backup:", error);
-      toast.error("Erro ao baixar o backup");
-    } finally {
-      setIsDownloading(false);
+      console.error("Erro ao fazer logout:", error);
     }
   };
 
@@ -137,7 +96,7 @@ export function AppSidebar() {
         </div>
         <span className="font-bold text-xl">GymPulse</span>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
@@ -154,22 +113,13 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      
+
       <SidebarFooter className="p-4 border-t">
         <div className="flex flex-col gap-4">
-          <button 
-            onClick={handleDownloadBackup}
-            className="flex items-center text-blue-500 hover:bg-blue-50 rounded-md px-2 py-1.5 transition-colors text-sm"
-            disabled={isDownloading}
-          >
-            <Database className="mr-2 h-4 w-4" />
-            <span>{isDownloading ? "Baixando..." : "Baixar Backup"}</span>
-          </button>
-          
           <div className="text-sm text-gray-500">
             GymPulse System v1.0
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             className="flex items-center text-red-500 hover:bg-red-50 rounded-md px-2 py-1.5 transition-colors text-sm"
           >

@@ -3,23 +3,21 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [configStatus, setConfigStatus] = useState<"idle" | "success" | "error">("idle");
   const [isGeneratingBackup, setIsGeneratingBackup] = useState(false);
   const { toast } = useToast();
+  const { isAuthenticated, user } = useAuth();
 
   const configureDbAccess = async () => {
     setIsConfiguring(true);
     setConfigStatus("idle");
-    
+
     try {
-      // Obter o token de acesso atual
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      if (!isAuthenticated) {
         toast({
           title: "Erro",
           description: "Você precisa estar autenticado para configurar o acesso ao banco de dados.",
@@ -28,31 +26,34 @@ const Index = () => {
         setConfigStatus("error");
         return;
       }
-      
-      // Using a different approach: Cast the function name and parameters separately
-      // @ts-ignore - Explicitly ignoring TypeScript error for this specific RPC call
-      const { data, error } = await supabase.rpc('allow_all_ips_db_access', {});
-      
-      if (error) {
-        console.error("Erro ao configurar acesso:", error);
-        toast({
-          title: "Erro",
-          description: `Falha ao configurar acesso ao banco de dados: ${error.message}`,
-          variant: "destructive",
-        });
-        setConfigStatus("error");
-      } else {
-        toast({
-          title: "Sucesso",
-          description: "Acesso ao banco de dados configurado para todos os IPs!",
-        });
-        setConfigStatus("success");
+
+      // Call the RPC function through our new API
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:3001/api/rpc/allow_all_ips_db_access', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to configure database access');
       }
+
+      toast({
+        title: "Sucesso",
+        description: "Acesso ao banco de dados configurado para todos os IPs!",
+      });
+      setConfigStatus("success");
     } catch (error: any) {
       console.error("Erro:", error);
       toast({
         title: "Erro",
-        description: `Falha ao configurar acesso: ${error.message}`,
+        description: `Erro ao configurar acesso: ${error.message}`,
         variant: "destructive",
       });
       setConfigStatus("error");
@@ -63,11 +64,9 @@ const Index = () => {
 
   const generateBackup = async () => {
     setIsGeneratingBackup(true);
-    
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      if (!isAuthenticated) {
         toast({
           title: "Erro",
           description: "Você precisa estar autenticado para gerar backup.",
@@ -76,38 +75,15 @@ const Index = () => {
         return;
       }
 
-      // Call the edge function to generate a backup
-      const { data, error } = await supabase.functions.invoke('generate-backup', {});
-      
-      if (error) {
-        console.error("Erro ao gerar backup:", error);
-        toast({
-          title: "Erro",
-          description: `Falha ao gerar backup: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Create a blob and download it
-      const blob = new Blob([data], { type: 'application/sql' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `supabase_backup_${new Date().toISOString().split('T')[0]}.sql`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      
       toast({
-        title: "Sucesso",
-        description: "Backup gerado com sucesso!",
+        title: "Funcionalidade em desenvolvimento",
+        description: "A funcionalidade de backup será implementada em breve",
       });
     } catch (error: any) {
       console.error("Erro:", error);
       toast({
         title: "Erro",
-        description: `Falha ao gerar backup: ${error.message}`,
+        description: `Erro ao gerar backup: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -118,70 +94,79 @@ const Index = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Configuração de Acesso ao Banco de Dados</h1>
-      
+
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Acesso ao PostgreSQL</h2>
         <p className="mb-4">
           Clique no botão abaixo para permitir acesso ao banco de dados PostgreSQL de qualquer IP.
           Isso é necessário para ferramentas como pgAdmin ou DBeaver.
         </p>
-        
+
         <div className="mb-4">
           <h3 className="font-medium mb-2">Dados de conexão:</h3>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Host: db.rmvrrrqlqrmtiiwxugfe.supabase.co</li>
+            <li>Host: localhost</li>
             <li>Port: 5432</li>
-            <li>Database: postgres</li>
+            <li>Database: GYMPULSE_BD</li>
             <li>Username: postgres</li>
             <li>SSL mode: require</li>
           </ul>
         </div>
-        
-        <Button 
-          onClick={configureDbAccess} 
-          disabled={isConfiguring}
+
+        <Button
+          onClick={configureDbAccess}
+          disabled={isConfiguring || !isAuthenticated}
           variant={configStatus === "success" ? "outline" : "default"}
         >
-          {isConfiguring ? "Configurando..." : 
-           configStatus === "success" ? "Configurado com Sucesso" : 
-           "Liberar Acesso ao Banco de Dados"}
+          {isConfiguring ? "Configurando..." :
+            configStatus === "success" ? "Configurado com Sucesso" :
+              "Liberar Acesso ao Banco de Dados"}
         </Button>
-        
+
         {configStatus === "success" && (
           <p className="mt-4 text-green-600">
             Acesso liberado! Agora você pode se conectar usando ferramentas como pgAdmin ou DBeaver.
           </p>
         )}
-        
+
         {configStatus === "error" && (
           <p className="mt-4 text-red-600">
             Ocorreu um erro ao tentar configurar o acesso. Por favor, tente novamente ou contate o suporte.
           </p>
         )}
+
+        {!isAuthenticated && (
+          <p className="mt-4 text-yellow-600">
+            Você precisa estar logado para usar esta funcionalidade.
+          </p>
+        )}
       </Card>
-      
+
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Backup do Banco de Dados</h2>
         <p className="mb-4">
-          Clique no botão abaixo para gerar e baixar um backup completo do banco de dados.
-          O backup incluirá todos os schemas, tabelas, funções, views e políticas de segurança.
+          Gere um backup completo do banco de dados PostgreSQL.
         </p>
-        
-        <Button 
-          onClick={generateBackup} 
-          disabled={isGeneratingBackup}
+
+        <Button
+          onClick={generateBackup}
+          disabled={isGeneratingBackup || !isAuthenticated}
+          variant="outline"
         >
-          {isGeneratingBackup ? "Gerando Backup..." : "Gerar Backup do Banco de Dados"}
+          {isGeneratingBackup ? "Gerando backup..." : "Gerar Backup"}
         </Button>
       </Card>
-      
-      <div className="mt-6 border p-4 rounded-md bg-yellow-50">
-        <h3 className="font-medium text-yellow-800">Nota de Segurança</h3>
-        <p className="text-yellow-700">
-          Permitir acesso de qualquer IP ao seu banco de dados pode representar um risco de segurança.
-          Considere restringir o acesso apenas aos IPs necessários quando estiver em um ambiente de produção.
-        </p>
-      </div>
+
+      {user && (
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Informações do Usuário</h2>
+          <div className="space-y-2">
+            <p><strong>Nome:</strong> {user.name}</p>
+            <p><strong>Email:</strong> {user.email}</p>
+            <p><strong>Função:</strong> {user.role}</p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
