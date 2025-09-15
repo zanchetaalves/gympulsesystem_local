@@ -379,10 +379,34 @@ const setupRoutes = () => {
     app.delete('/api/:table/:id', authenticateToken, async (req, res) => {
         const { table, id } = req.params;
 
+        // Special handling for plans - check for related subscriptions
+        if (table === 'plans') {
+            // Check if there are any subscriptions using this plan
+            const subscriptionCheck = await query(
+                `SELECT COUNT(*) as count FROM subscriptions WHERE plan_id = $1`, 
+                [id]
+            );
+            
+            if (subscriptionCheck.error) {
+                return res.status(500).json({ error: subscriptionCheck.error });
+            }
+            
+            const subscriptionCount = parseInt(subscriptionCheck.data[0].count);
+            if (subscriptionCount > 0) {
+                return res.status(400).json({ 
+                    error: `Não é possível excluir este plano pois existem ${subscriptionCount} matrícula(s) associada(s) a ele.` 
+                });
+            }
+        }
+
         const result = await query(`DELETE FROM ${table} WHERE id = $1 RETURNING *`, [id]);
 
         if (result.error) {
             return res.status(500).json({ error: result.error });
+        }
+
+        if (!result.data || result.data.length === 0) {
+            return res.status(404).json({ error: 'Registro não encontrado' });
         }
 
         res.json({ data: result.data[0] });

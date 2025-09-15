@@ -140,11 +140,49 @@ export const usePlans = () => {
     },
   });
 
+  // Mutation para excluir plano
+  const deletePlan = useMutation({
+    mutationFn: async (id: string) => {
+      console.log('Tentando excluir plano com ID via API:', id);
+      
+      const response = await apiCall(`/plans/${id}`, {
+        method: 'DELETE',
+      });
+      
+      console.log('Plano excluído com sucesso via API:', response);
+      return id;
+    },
+    onSuccess: (deletedId) => {
+      // Remove o plano da cache local imediatamente
+      queryClient.setQueryData(['plans'], (oldData: Plan[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.filter(plan => plan.id !== deletedId);
+      });
+      
+      // Invalida as queries para garantir sincronização
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      
+      toast({
+        title: "Sucesso",
+        description: "Plano excluído com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao excluir plano:', error);
+      toast({
+        title: "Erro ao Excluir Plano",
+        description: error.message || "Erro desconhecido",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     plans,
     isLoading,
     error,
     createPlan,
-    updatePlan
+    updatePlan,
+    deletePlan
   };
 };

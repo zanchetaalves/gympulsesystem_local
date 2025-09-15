@@ -33,13 +33,17 @@ const formSchema = z.object({
   type: z.string({
     required_error: "Tipo é obrigatório",
   }).min(1, "Tipo é obrigatório"),
-  priceBrl: z.number({
-    required_error: "Preço é obrigatório",
-  }).min(0, "Preço deve ser maior que zero"),
+  priceBrl: z.string().transform((val) => {
+    const num = parseFloat(val.replace(',', '.'));
+    if (isNaN(num)) throw new Error("Preço deve ser um número válido");
+    return num;
+  }).refine((val) => val >= 0, "Preço deve ser maior que zero"),
   description: z.string().optional(),
-  durationMonths: z.number({
-    required_error: "Duração é obrigatória",
-  }).min(1, "Duração deve ser maior que zero"),
+  durationMonths: z.string().transform((val) => {
+    const num = parseInt(val);
+    if (isNaN(num)) throw new Error("Duração deve ser um número válido");
+    return num;
+  }).refine((val) => val >= 1, "Duração deve ser maior que zero"),
   active: z.boolean().default(true),
 });
 
@@ -110,9 +114,10 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
               <FormLabel>Preço (R$)</FormLabel>
               <FormControl>
                 <Input
-                  type="number"
+                  type="text"
                   {...field}
-                  onChange={e => field.onChange(Number(e.target.value))}
+                  value={field.value ? String(field.value) : ''}
+                  placeholder="0,00"
                 />
               </FormControl>
               <FormMessage />
@@ -142,9 +147,10 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
               <FormLabel>Duração (meses)</FormLabel>
               <FormControl>
                 <Input
-                  type="number"
+                  type="text"
                   {...field}
-                  onChange={e => field.onChange(Number(e.target.value))}
+                  value={field.value ? String(field.value) : ''}
+                  placeholder="1"
                 />
               </FormControl>
               <FormMessage />
