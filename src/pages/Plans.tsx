@@ -72,8 +72,13 @@ const Plans = () => {
   };
 
   const handleEditPlan = async (data: any) => {
+    if (!selectedPlan) return;
+
     try {
-      await updatePlan.mutateAsync(data);
+      await updatePlan.mutateAsync({
+        ...data,
+        id: selectedPlan.id // Ensure the plan ID is included for the update
+      });
       // Fechar dialog com controle defensivo para produção
       if (isMounted) {
         requestAnimationFrame(() => {
@@ -150,8 +155,8 @@ const Plans = () => {
 
       {/* Dialog de Criar Plano - Renderizar apenas quando montado */}
       {isMounted && (
-        <Dialog 
-          open={createDialogOpen} 
+        <Dialog
+          open={createDialogOpen}
           onOpenChange={(open) => {
             if (!open && isMounted) {
               // Fechar com requestAnimationFrame para evitar problemas de DOM
@@ -166,19 +171,19 @@ const Plans = () => {
             }
           }}
         >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cadastrar Novo Plano</DialogTitle>
-            <DialogDescription>
-              Preencha as informações abaixo para criar um novo plano.
-            </DialogDescription>
-          </DialogHeader>
-          <PlanForm
-            onSubmit={handleCreatePlan}
-            isLoading={createPlan.isPending}
-          />
-        </DialogContent>
-      </Dialog>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cadastrar Novo Plano</DialogTitle>
+              <DialogDescription>
+                Preencha as informações abaixo para criar um novo plano.
+              </DialogDescription>
+            </DialogHeader>
+            <PlanForm
+              onSubmit={handleCreatePlan}
+              isLoading={createPlan.isPending}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       <Card>
@@ -254,9 +259,9 @@ const Plans = () => {
       </Card>
 
       {/* Delete Confirmation Dialog - Renderizar apenas quando montado */}
-      {isMounted && (
-        <AlertDialog 
-          open={deleteDialogOpen} 
+      {isMounted && selectedPlan && (
+        <AlertDialog
+          open={deleteDialogOpen}
           onOpenChange={(open) => {
             if (!open && isMounted) {
               requestAnimationFrame(() => {
@@ -270,62 +275,62 @@ const Plans = () => {
             }
           }}
         >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Plano</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o plano "{selectedPlan?.name}"?
-              Esta ação não pode ser desfeita e só será permitida se não houver matrículas associadas a este plano.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePlan}
-              disabled={deletePlan.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deletePlan.isPending ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir Plano</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o plano "{selectedPlan?.name}"?
+                Esta ação não pode ser desfeita e só será permitida se não houver matrículas associadas a este plano.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeletePlan}
+                disabled={deletePlan.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deletePlan.isPending ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
       {/* Dialog de Editar Plano - Renderizar apenas quando montado */}
-      {isMounted && (
-      <Dialog 
-        open={editDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open && isMounted) {
-            // Fechar com requestAnimationFrame para evitar problemas de DOM
-            requestAnimationFrame(() => {
-              if (isMounted) {
-                setEditDialogOpen(false);
-                setSelectedPlan(null);
-              }
-            });
-          } else if (open && isMounted) {
-            setEditDialogOpen(open);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Plano</DialogTitle>
-            <DialogDescription>
-              Modifique as informações do plano conforme necessário.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedPlan && (
-            <PlanForm
-              onSubmit={handleEditPlan}
-              isLoading={updatePlan.isPending}
-              defaultValues={selectedPlan}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {isMounted && selectedPlan && (
+        <Dialog
+          open={editDialogOpen}
+          onOpenChange={(open) => {
+            if (!open && isMounted) {
+              // Fechar com requestAnimationFrame para evitar problemas de DOM
+              requestAnimationFrame(() => {
+                if (isMounted) {
+                  setEditDialogOpen(false);
+                  setSelectedPlan(null);
+                }
+              });
+            } else if (open && isMounted) {
+              setEditDialogOpen(open);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Plano</DialogTitle>
+              <DialogDescription>
+                Modifique as informações do plano conforme necessário.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedPlan && (
+              <PlanForm
+                onSubmit={handleEditPlan}
+                isLoading={updatePlan.isPending}
+                defaultValues={selectedPlan}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
