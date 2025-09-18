@@ -30,7 +30,7 @@ echo.
 echo Onde esta configurado seu frontend no IIS?
 echo Opcoes comuns:
 echo 1. C:\inetpub\wwwroot\ (site padrao)
-echo 2. C:\gym-pulse-production\frontend\
+echo 2. C:\gym-pulse-system\dist\ (pasta do projeto)
 echo 3. Outro local
 echo.
 set /p "opcao=Digite o numero da opcao [1-3]: "
@@ -38,7 +38,7 @@ set /p "opcao=Digite o numero da opcao [1-3]: "
 if "%opcao%"=="1" (
     set "FRONTEND_PATH=C:\inetpub\wwwroot"
 ) else if "%opcao%"=="2" (
-    set "FRONTEND_PATH=C:\gym-pulse-production\frontend"
+    set "FRONTEND_PATH=C:\gym-pulse-system\dist"
 ) else (
     set /p "FRONTEND_PATH=Digite o caminho completo do frontend: "
 )

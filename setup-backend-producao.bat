@@ -17,36 +17,42 @@ if %errorLevel% == 0 (
 )
 
 echo.
-echo 📋 PASSO 1: Criando estrutura de diretorios...
-if not exist "C:\gym-pulse-production" mkdir "C:\gym-pulse-production"
-if not exist "C:\gym-pulse-production\backend" mkdir "C:\gym-pulse-production\backend"
-if not exist "C:\gym-pulse-production\logs" mkdir "C:\gym-pulse-production\logs"
-echo ✅ Estrutura criada!
+echo 📋 PASSO 1: Verificando estrutura de diretorios...
+set "PROJETO_BASE=C:\gym-pulse-system"
 
-echo.
-echo 📋 PASSO 2: Verificando arquivos do projeto...
-set "PROJETO_ORIGEM=C:\Projetos_Particulares\gym-pulse-system"
-
-if not exist "%PROJETO_ORIGEM%\package.json" (
-    echo ❌ ERRO: Nao encontrei o projeto em %PROJETO_ORIGEM%
-    echo Por favor, confirme o caminho do seu projeto.
+if not exist "%PROJETO_BASE%" (
+    echo ❌ ERRO: Nao encontrei o projeto em %PROJETO_BASE%
+    echo Por favor, confirme se a aplicacao esta em C:\gym-pulse-system
     pause
     exit /b 1
 )
-echo ✅ Projeto encontrado!
+
+if not exist "%PROJETO_BASE%\backend" mkdir "%PROJETO_BASE%\backend"
+if not exist "%PROJETO_BASE%\logs" mkdir "%PROJETO_BASE%\logs"
+echo ✅ Estrutura verificada!
 
 echo.
-echo 📋 PASSO 3: Copiando arquivos necessarios...
-echo Copiando package.json...
-copy "%PROJETO_ORIGEM%\package.json" "C:\gym-pulse-production\backend\" >nul
-if exist "%PROJETO_ORIGEM%\package-lock.json" (
-    copy "%PROJETO_ORIGEM%\package-lock.json" "C:\gym-pulse-production\backend\" >nul
+echo 📋 PASSO 2: Verificando arquivos do projeto...
+if not exist "%PROJETO_BASE%\package.json" (
+    echo ❌ ERRO: Nao encontrei package.json em %PROJETO_BASE%
+    echo Verifique se os arquivos estao na pasta correta.
+    pause
+    exit /b 1
+)
+echo ✅ Projeto encontrado em %PROJETO_BASE%!
+
+echo.
+echo 📋 PASSO 3: Organizando arquivos necessarios...
+echo Copiando package.json para pasta backend...
+copy "%PROJETO_BASE%\package.json" "%PROJETO_BASE%\backend\" >nul
+if exist "%PROJETO_BASE%\package-lock.json" (
+    copy "%PROJETO_BASE%\package-lock.json" "%PROJETO_BASE%\backend\" >nul
     echo ✅ package-lock.json copiado
 )
 
-echo Copiando arquivos do servidor...
-if exist "%PROJETO_ORIGEM%\server" (
-    xcopy "%PROJETO_ORIGEM%\server\*" "C:\gym-pulse-production\backend\" /E /Y /Q >nul
+echo Copiando arquivos do servidor para pasta backend...
+if exist "%PROJETO_BASE%\server" (
+    xcopy "%PROJETO_BASE%\server\*" "%PROJETO_BASE%\backend\" /E /Y /Q >nul
     echo ✅ Arquivos do servidor copiados
 ) else (
     echo ❌ ERRO: Pasta server nao encontrada!
@@ -61,18 +67,18 @@ echo NODE_ENV=production
 echo PORT=3001
 echo DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gym_pulse
 echo JWT_SECRET=seu_jwt_secret_super_seguro_aqui
-) > "C:\gym-pulse-production\backend\.env"
+) > "%PROJETO_BASE%\backend\.env"
 echo ✅ Arquivo .env criado!
 
 echo.
 echo 📋 PASSO 5: Criando script de inicializacao...
 (
 echo @echo off
-echo cd /d "C:\gym-pulse-production\backend"
+echo cd /d "%PROJETO_BASE%\backend"
 echo set NODE_ENV=production
 echo set PORT=3001
 echo node index.js
-) > "C:\gym-pulse-production\backend\start.bat"
+) > "%PROJETO_BASE%\backend\start.bat"
 echo ✅ Script start.bat criado!
 
 echo.
@@ -91,7 +97,7 @@ if %errorLevel% == 0 (
 echo.
 echo 📋 PASSO 7: Instalando dependencias do Node.js...
 echo Isso pode levar alguns minutos...
-cd "C:\gym-pulse-production\backend"
+cd "%PROJETO_BASE%\backend"
 call npm install --production --silent
 if %errorLevel% == 0 (
     echo ✅ Dependencias instaladas com sucesso!
@@ -106,7 +112,7 @@ echo.
 echo 📋 PASSO 8: Testando configuracao do backend...
 echo Testando se o servidor inicia...
 timeout /t 2 >nul
-start /min cmd /c "cd C:\gym-pulse-production\backend && node index.js" >nul 2>&1
+start /min cmd /c "cd %PROJETO_BASE%\backend && node index.js" >nul 2>&1
 timeout /t 5 >nul
 
 REM Verificar se esta rodando na porta 3001
@@ -132,6 +138,6 @@ echo 1. Execute: configurar-servico-nssm.bat
 echo 2. Teste o funcionamento
 echo 3. Configure o proxy no IIS
 echo.
-echo Estrutura criada em: C:\gym-pulse-production\backend\
+echo Estrutura criada em: %PROJETO_BASE%\backend\
 echo.
 pause

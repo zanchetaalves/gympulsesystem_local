@@ -69,20 +69,23 @@
 ## 📂 ESTRUTURA FINAL ESPERADA
 
 ```
-C:\gym-pulse-production\
-├── backend\
+C:\gym-pulse-system\
+├── backend\                ← Nova pasta criada
 │   ├── index.js              ← Servidor principal
 │   ├── auth.js              ← Autenticação
 │   ├── package.json         ← Dependências
 │   ├── node_modules\        ← Bibliotecas instaladas
 │   ├── .env                 ← Configurações
 │   └── start.bat           ← Script de inicialização
-├── frontend\               ← Já configurado no IIS
+├── dist\                   ← Frontend já configurado no IIS
 │   ├── index.html
 │   └── assets\
-└── logs\
-    ├── backend.log         ← Logs do serviço
-    └── error.log          ← Logs de erro
+├── logs\                   ← Nova pasta criada
+│   ├── backend.log         ← Logs do serviço
+│   └── error.log          ← Logs de erro
+├── server\                 ← Arquivos originais (mantidos)
+├── src\                    ← Código fonte (mantido)
+└── package.json           ← Arquivo original do projeto
 ```
 
 ---
@@ -103,4 +106,4 @@ Execute na ordem:
 - **Ver status do serviço:** `nssm status GymPulseBackend`
 - **Parar serviço:** `nssm stop GymPulseBackend`
 - **Iniciar serviço:** `nssm start GymPulseBackend`
-- **Ver logs:** Arquivo em `C:\gym-pulse-production\logs\`
+- **Ver logs:** Arquivo em `C:\gym-pulse-system\logs\`

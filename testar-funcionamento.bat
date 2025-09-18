@@ -5,8 +5,8 @@ echo   TESTANDO FUNCIONAMENTO COMPLETO
 echo ========================================
 echo.
 
-echo 📋 TESTE 1: Status do servico NSSM...
-nssm status GymPulseBackend
+echo 📋 TESTE 1: Status do servico Windows...
+sc query GymPulseBackend | findstr "STATE\|SERVICE_NAME"
 echo.
 
 echo 📋 TESTE 2: Verificando portas em uso...
@@ -36,17 +36,19 @@ if %errorLevel% == 0 (
 echo.
 
 echo 📋 TESTE 5: Verificando logs do backend...
-if exist "C:\gym-pulse-production\logs\backend.log" (
+set "PROJETO_BASE=C:\gym-pulse-system"
+
+if exist "%PROJETO_BASE%\logs\backend.log" (
     echo ✅ Log encontrado. Ultimas 5 linhas:
-    powershell "Get-Content 'C:\gym-pulse-production\logs\backend.log' -Tail 5 2>$null"
+    powershell "Get-Content '%PROJETO_BASE%\logs\backend.log' -Tail 5 2>$null"
 ) else (
     echo ⚠️ Log do backend nao encontrado
 )
 echo.
 
-if exist "C:\gym-pulse-production\logs\error.log" (
+if exist "%PROJETO_BASE%\logs\error.log" (
     echo ⚠️ Log de erros encontrado. Ultimas 5 linhas:
-    powershell "Get-Content 'C:\gym-pulse-production\logs\error.log' -Tail 5 2>$null"
+    powershell "Get-Content '%PROJETO_BASE%\logs\error.log' -Tail 5 2>$null"
     echo.
 )
 
@@ -72,8 +74,8 @@ echo Frontend: http://localhost/
 echo Backend:  http://localhost:3001/api/health
 echo.
 echo 🛠️ COMANDOS DE MANUTENCAO:
-echo Ver status:    nssm status GymPulseBackend
-echo Ver logs:      type C:\gym-pulse-production\logs\backend.log
-echo Reiniciar:     nssm restart GymPulseBackend
+echo Ver status:    sc query GymPulseBackend
+echo Ver logs:      type %PROJETO_BASE%\logs\backend.log
+echo Reiniciar:     sc stop GymPulseBackend && sc start GymPulseBackend
 echo.
 pause
