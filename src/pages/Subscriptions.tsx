@@ -57,7 +57,12 @@ const Subscriptions = () => {
   };
 
   const handleEditSubscription = async (data: any) => {
-    updateSubscription.mutate(data, {
+    if (!selectedSubscription) return;
+    
+    updateSubscription.mutate({
+      ...data,
+      id: selectedSubscription.id // Ensure the subscription ID is included for the update
+    }, {
       onSuccess: () => {
         setEditDialogOpen(false);
         setSelectedSubscription(null);

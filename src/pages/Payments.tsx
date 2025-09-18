@@ -80,6 +80,7 @@ const Payments = () => {
     
     updatePayment.mutate({
       ...selectedPayment,
+      id: selectedPayment.id, // Ensure the payment ID is included for the update
       confirmed: true
     }, {
       onSuccess: () => {
