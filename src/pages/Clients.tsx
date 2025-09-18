@@ -80,7 +80,12 @@ const Clients = () => {
   };
 
   const handleEditClient = async (data: any) => {
-    updateClient.mutate(data, {
+    if (!selectedClient) return;
+    
+    updateClient.mutate({
+      ...data,
+      id: selectedClient.id // Ensure the client ID is included for the update
+    }, {
       onSuccess: () => {
         setEditDialogOpen(false);
         setSelectedClient(null);
