@@ -14,13 +14,13 @@
 2. **`configurar-servico-node-v2.bat`** → Configurar serviço Node.js
 3. **`testar-funcionamento.bat`** → Testar se tudo funciona
 4. **`configurar-proxy-iis.bat`** → Conectar frontend ↔ backend
+5. **`configurar-spa-routing.bat`** → Resolver erro 404 ao atualizar páginas
 
 ### 🗑️ **Scripts Removidos:**
-- ❌ `configurar-servico-nssm.bat` (removido)
-- ❌ `configurar-servico-nssm-v2.bat` (removido)
-- ❌ `corrigir-nssm.bat` (removido)
-- ❌ `testar-nssm.bat` (removido)
-- ❌ `configurar-servico-node.bat` (removido - era v1)
+- ❌ Todos os scripts de continuação/correção temporários
+- ❌ Arquivos PM2 (ecosystem.config.*) 
+- ❌ Scripts específicos para outros servidores
+- ❌ Guias de produção incompletos
 
 ---
 
@@ -81,6 +81,26 @@
 - ✅ SPA routing para React
 - ✅ CORS headers
 - ✅ Reinicia IIS
+
+---
+
+### **PASSO 5: Configurar SPA Routing (NOVO!)**
+```batch
+# Execute como Administrador
+.\configurar-spa-routing.bat
+```
+
+**O que resolve:**
+- ✅ **Problema 404** ao atualizar páginas (localhost:81/pagamentos)
+- ✅ **Fallback para index.html** em rotas SPA
+- ✅ **Configuração web.config** automática
+- ✅ **Assets estáticos** servidos corretamente
+- ✅ **Proxy API** mantido funcionando
+
+**Quando usar:**
+- 🔧 Após configurar tudo e ainda ter erro 404 ao atualizar páginas
+- 🔧 Quando `localhost:81/pagamentos` + F5 der erro
+- 🔧 Para finalizar configuração SPA no IIS
 
 ---
 
@@ -145,28 +165,34 @@ netstat -an | findstr :3001                  # Verificar porta
 
 1. **Abra:** `http://localhost/`
 2. **Faça login** na aplicação
-3. **Verifique** se as telas carregam
-4. **Teste** operações (criar, editar, etc.)
+3. **Navegue** para `http://localhost/pagamentos`
+4. **Pressione F5** → Não deve dar erro 404!
+5. **Teste** outras rotas: `/clientes`, `/planos`, etc.
+6. **Verifique** operações (criar, editar, deletar)
 
 ---
 
 ## ⚡ SEQUÊNCIA DE EXECUÇÃO
 
 ```batch
-# 1. Preparar
+# 1. Preparar backend
 .\setup-backend-producao.bat
 
-# 2. Configurar serviço
+# 2. Configurar serviço Node.js
 .\configurar-servico-node-v2.bat
 
-# 3. Testar
+# 3. Testar funcionamento
 .\testar-funcionamento.bat
 
-# 4. Configurar proxy
+# 4. Configurar proxy IIS
 .\configurar-proxy-iis.bat
 
-# 5. Teste final
+# 5. Configurar SPA routing (NOVO!)
+.\configurar-spa-routing.bat
+
+# 6. Teste final completo
 # Acesse http://localhost/ no navegador
+# Teste: localhost/pagamentos + F5 (não deve dar 404)
 ```
 
 ---
