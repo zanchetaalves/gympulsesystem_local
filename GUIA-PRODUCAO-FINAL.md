@@ -10,11 +10,17 @@
 ## 📋 SCRIPTS DISPONÍVEIS (LIMPOS)
 
 ### 🎯 **Scripts Principais:**
+
+#### **📦 Instalação Inicial:**
 1. **`setup-backend-producao.bat`** → Preparar arquivos do backend
 2. **`configurar-servico-node-v2.bat`** → Configurar serviço Node.js
 3. **`testar-funcionamento.bat`** → Testar se tudo funciona
 4. **`configurar-proxy-iis.bat`** → Conectar frontend ↔ backend
 5. **`configurar-spa-routing.bat`** → Resolver erro 404 ao atualizar páginas
+
+#### **🔄 Atualização/Manutenção:**
+6. **`atualizar-producao-seguro.bat`** → Atualizar aplicação com backup automático
+7. **`restaurar-backup.bat`** → Restaurar backup em caso de erro
 
 ### 🗑️ **Scripts Removidos:**
 - ❌ Todos os scripts de continuação/correção temporários
@@ -206,6 +212,129 @@ netstat -an | findstr :3001                  # Verificar porta
 - ✅ **Logs automáticos**
 - ✅ **Restart automático** em caso de erro
 - ✅ **Método alternativo** se node-windows falhar
+
+---
+
+## 🔄 ATUALIZAÇÃO EM PRODUÇÃO
+
+### **📋 Scripts de Atualização:**
+1. **`atualizar-producao-seguro.bat`** → Atualização completa com backup
+2. **`restaurar-backup.bat`** → Restaurar backup em caso de erro
+
+---
+
+### **🛠️ PROCESSO DE ATUALIZAÇÃO**
+
+#### **PASSO 1: Preparar Atualização**
+```batch
+# 1. Faça backup do projeto atual no seu PC de desenvolvimento
+git add .
+git commit -m "Backup antes da atualização"
+git push
+
+# 2. Faça build da nova versão
+npm run build
+
+# 3. Copie o projeto atualizado para o servidor
+# Exemplo: copiar para C:\gym-pulse-system-novo\
+```
+
+#### **PASSO 2: Executar Atualização Segura**
+```batch
+# Execute como Administrador no servidor
+.\atualizar-producao-seguro.bat
+```
+
+**O que este script faz:**
+- ✅ **Verifica status** do sistema atual (serviços, portas, etc.)
+- ✅ **Cria backup automático** com data/hora
+- ✅ **Para serviços** temporariamente
+- ✅ **Substitui arquivos** backend e frontend
+- ✅ **Reinstala dependências** Node.js
+- ✅ **Reinicia serviços** automaticamente
+- ✅ **Testa funcionamento** pós-atualização
+- ✅ **Rollback automático** se detectar erro
+
+#### **PASSO 3: Verificar Atualização**
+```batch
+# Testa automaticamente, mas você pode verificar manualmente:
+.\testar-funcionamento.bat
+```
+
+#### **PASSO 4: Em Caso de Erro - Restaurar Backup**
+```batch
+# Se algo der errado, execute:
+.\restaurar-backup.bat
+```
+
+**O que o restaurar backup faz:**
+- ✅ **Lista backups** disponíveis por data
+- ✅ **Para serviços** em execução
+- ✅ **Restaura arquivos** da versão anterior
+- ✅ **Reinicia serviços** com versão estável
+- ✅ **Testa funcionamento** da versão restaurada
+
+---
+
+### **⚡ SEQUÊNCIA ATUALIZAÇÃO COMPLETA**
+
+```batch
+# 1. No PC de desenvolvimento - Preparar
+git add . && git commit -m "Nova versão" && git push
+npm run build
+# Copiar projeto para C:\gym-pulse-system-novo\
+
+# 2. No servidor - Atualizar
+.\atualizar-producao-seguro.bat
+
+# 3. Verificar se está funcionando
+.\testar-funcionamento.bat
+
+# 4. Se houver problema - Restaurar
+.\restaurar-backup.bat
+```
+
+---
+
+### **🔒 PRECAUÇÕES DE SEGURANÇA**
+
+#### **✅ Antes da Atualização:**
+- 📋 **Backup do banco** PostgreSQL
+- 📋 **Commit e push** do código atual
+- 📋 **Teste local** da nova versão
+- 📋 **Horário de baixo uso** (madrugada/fim de semana)
+- 📋 **Comunicar usuários** sobre manutenção
+
+#### **⚠️ Durante a Atualização:**
+- 🔐 **Execute como Administrador**
+- 📱 **Monitore logs** em tempo real
+- ⏱️ **Tempo estimado:** 5-10 minutos
+- 🚫 **Não interrompa** o processo
+
+#### **🧪 Após a Atualização:**
+- ✅ **Teste login** na aplicação
+- ✅ **Teste operações** CRUD
+- ✅ **Verifique logs** de erro
+- ✅ **Teste rotas** SPA (F5 nas páginas)
+- ✅ **Confirme** com usuários principais
+
+---
+
+### **📊 MONITORAMENTO PÓS-ATUALIZAÇÃO**
+
+```batch
+# Verificar status dos serviços
+sc query GymPulseBackend
+
+# Verificar logs em tempo real
+type C:\gym-pulse-system\logs\backend.log
+
+# Verificar se portas estão ativas
+netstat -an | findstr :3001
+
+# Teste rápido da API
+curl http://localhost:3001/api/health
+```
 
 ---
 
