@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:3001/api';
 
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('access_token');
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -58,6 +58,8 @@ const getColorForPlanType = (type: string): string => {
       return 'bg-blue-100 text-blue-800';
     case 'Trimestral':
       return 'bg-green-100 text-green-800';
+    case 'Quadrimestral':
+      return 'bg-orange-100 text-orange-800';
     case 'Anual':
       return 'bg-purple-100 text-purple-800';
     default:
@@ -144,11 +146,11 @@ export const usePlans = () => {
   const deletePlan = useMutation({
     mutationFn: async (id: string) => {
       console.log('Tentando excluir plano com ID via API:', id);
-      
+
       const response = await apiCall(`/plans/${id}`, {
         method: 'DELETE',
       });
-      
+
       console.log('Plano excluído com sucesso via API:', response);
       return id;
     },
@@ -158,10 +160,10 @@ export const usePlans = () => {
         if (!oldData) return [];
         return oldData.filter(plan => plan.id !== deletedId);
       });
-      
+
       // Invalida as queries para garantir sincronização
       queryClient.invalidateQueries({ queryKey: ['plans'] });
-      
+
       toast({
         title: "Sucesso",
         description: "Plano excluído com sucesso!",

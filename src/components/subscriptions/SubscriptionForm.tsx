@@ -28,7 +28,12 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { formatCurrency } from "@/lib/utils";
 
 // Função para criar schema com validação dinâmica
-const createFormSchema = (existingSubscriptions: Subscription[], currentSubscriptionId?: string) => {
+const createFormSchema = (existingSubscriptions: Subscription[], currentSubscriptionId?: string, availablePlanTypes: string[] = []) => {
+  // Se não há tipos de planos disponíveis, usar os padrões
+  const planTypeOptions = availablePlanTypes.length > 0
+    ? availablePlanTypes
+    : ["Mensal", "Trimestral", "Quadrimestral", "Anual"];
+
   return z.object({
     id: z.string().optional(),
     clientId: z.string({
@@ -51,8 +56,10 @@ const createFormSchema = (existingSubscriptions: Subscription[], currentSubscrip
     }, {
       message: "Este cliente já possui uma matrícula ativa. Aguarde o vencimento da atual."
     }),
-    plan: z.enum(["Mensal", "Trimestral", "Anual"], {
+    plan: z.string({
       required_error: "Plano é obrigatório",
+    }).refine((value) => planTypeOptions.includes(value), {
+      message: "Tipo de plano inválido",
     }),
     startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
       message: "Data de início inválida",
@@ -66,7 +73,7 @@ const createFormSchema = (existingSubscriptions: Subscription[], currentSubscrip
 type SubscriptionFormData = {
   id?: string;
   clientId: string;
-  plan: "Mensal" | "Trimestral" | "Anual";
+  plan: string; // Permitir qualquer string já que validamos no schema
   startDate: string;
   active: boolean;
   locked: boolean;
@@ -99,6 +106,9 @@ export function SubscriptionForm({
   const { clients } = useClients();
   const { subscriptions } = useSubscriptions();
   const activePlans = plans.filter(p => p.active);
+
+  // Obter tipos de planos únicos dos planos ativos
+  const availablePlanTypes = [...new Set(activePlans.map(p => p.type))];
 
   // Função para verificar se um cliente possui matrícula ativa
   const clientHasActiveSubscription = (clientId: string): boolean => {
@@ -139,7 +149,7 @@ export function SubscriptionForm({
   };
 
   // Criar o schema dinâmico com as matrículas existentes
-  const dynamicSchema = createFormSchema(subscriptions, defaultValues?.id);
+  const dynamicSchema = createFormSchema(subscriptions, defaultValues?.id, availablePlanTypes);
 
   const form = useForm<SubscriptionFormData>({
     resolver: zodResolver(dynamicSchema),
@@ -170,6 +180,8 @@ export function SubscriptionForm({
         }
 
         const planInfo = plans.find(p => p.type === planType);
+        console.log('Debug - planType:', planType, 'planInfo:', planInfo, 'available plans:', plans.map(p => ({ type: p.type, duration: p.durationMonths })));
+
         if (planInfo) {
           let calculatedEndDate = addMonths(startDate, planInfo.durationMonths);
 

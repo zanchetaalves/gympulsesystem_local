@@ -23,7 +23,7 @@ export interface Client {
 export interface Subscription {
   id: string;
   clientId: string;
-  plan: 'Mensal' | 'Trimestral' | 'Anual';
+  plan: PlanType;
   startDate: Date;
   endDate: Date;
   active: boolean;
@@ -43,7 +43,7 @@ export interface Payment {
   client?: Client; // For joined data
 }
 
-export type PlanType = 'Mensal' | 'Trimestral' | 'Anual';
+export type PlanType = 'Mensal' | 'Trimestral' | 'Quadrimestral' | 'Anual';
 
 export interface Plan {
   id: string;
