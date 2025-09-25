@@ -296,6 +296,109 @@ npm run build
 
 ---
 
+### **🗄️ CONFIGURAÇÃO DO BANCO DE DADOS**
+
+#### **📋 Script Principal de Atualização:**
+```bash
+# Comando recomendado - configura tudo automaticamente
+npm run setup:db
+```
+
+**O que este comando faz:**
+- ✅ **Conecta** ao PostgreSQL (localhost:5432)
+- ✅ **Cria tabelas** se não existirem
+- ✅ **Aplica migrações** automaticamente
+- ✅ **Insere dados** de exemplo (planos, usuário admin)
+- ✅ **Verifica** estrutura final
+
+#### **🎯 Você Precisa Criar o Banco Primeiro?**
+
+**SIM!** Apenas o banco precisa existir:
+
+```sql
+-- Execute no pgAdmin ou psql como superuser (postgres)
+CREATE DATABASE "GYMPULSE_BD";
+```
+
+**O script é inteligente:**
+- 🆕 **Banco vazio:** Cria tudo do zero
+- 📊 **Banco com dados:** Preserva dados existentes, aplica só migrações
+- 🔄 **Tabelas existentes:** Pula criação, apenas atualiza estrutura
+
+#### **🔧 Scripts Específicos Disponíveis:**
+
+```bash
+# Migração de clientes (tornar campos opcionais)
+npm run migrate:clients
+
+# Configurar tipos de planos
+npm run setup:plan-types
+
+# Configurar autenticação e usuários
+npm run setup:auth
+
+# Configurar sistema de agendamentos
+npm run setup:appointments
+
+# Atualizar tabela de pagamentos
+npm run update:payments
+
+# Limpar e atualizar planos existentes
+npm run clean:plans
+```
+
+#### **⚙️ Configuração de Conexão:**
+
+**Arquivo:** `scripts/setup-database.js`
+```javascript
+const dbConfig = {
+    host: 'localhost',        // Servidor PostgreSQL
+    port: 5432,              // Porta padrão
+    database: 'GYMPULSE_BD', // Nome do banco
+    user: 'postgres',        // Usuário PostgreSQL
+    password: 'postgres',    // Senha do usuário
+    ssl: false              // SSL desabilitado (local)
+};
+```
+
+#### **🔍 Verificação Pós-Execução:**
+
+Após `npm run setup:db`, você deve ver:
+```
+✅ Connected to PostgreSQL successfully!
+✅ SQL script executed successfully!
+✅ Client table structure is up to date
+🎉 Database setup completed successfully!
+
+📋 Created tables:
+   - appointments, clients, payments
+   - plan_types, plans, user_roles, users
+
+📊 Sample data:
+   - Plans: 6 records
+   - Users: 1 records (admin padrão)
+```
+
+#### **🚨 Solução de Problemas:**
+
+**Erro de Conexão:**
+```bash
+❌ ECONNREFUSED
+```
+**Solução:**
+1. ✅ PostgreSQL está rodando?
+2. ✅ Banco "GYMPULSE_BD" existe?
+3. ✅ Credenciais corretas no script?
+
+**Erro de Permissão:**
+```bash
+❌ permission denied
+```
+**Solução:**
+- Execute como usuário `postgres` ou com privilégios de administrador
+
+---
+
 ### **🔒 PRECAUÇÕES DE SEGURANÇA**
 
 #### **✅ Antes da Atualização:**

@@ -1,0 +1,35 @@
+{
+    "name": "gym-pulse-production",
+    "version": "1.0.0",
+    "description": "Sistema Gym Pulse - Servidor de Produção Unificado",
+    "type": "module",
+    "main": "server-producao.js",
+    "scripts": {
+        "start": "node server-producao.js",
+        "start:dev": "NODE_ENV=development node server-producao.js",
+        "build": "echo 'Build do frontend deve ser executado no projeto principal'",
+        "setup:db": "node scripts/setup-database.js",
+        "test": "curl http://localhost:3000/api/health"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "pg": "^8.11.3",
+        "dotenv": "^16.3.1",
+        "cookie-parser": "^1.4.6",
+        "bcryptjs": "^2.4.3",
+        "jsonwebtoken": "^9.0.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "keywords": [
+        "gym",
+        "management",
+        "react",
+        "express",
+        "postgresql"
+    ],
+    "author": "Gym Pulse Team",
+    "license": "MIT"
+}
