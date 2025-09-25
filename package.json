@@ -21,7 +21,8 @@
     "update:plans": "node scripts/update-plans.js",
     "clean:plans": "node scripts/clean-plans.js",
     "test:client-deletion": "node scripts/test-client-deletion.js",
-    "migrate:birthdate": "node scripts/make-birthdate-required.cjs"
+    "migrate:birthdate": "node scripts/make-birthdate-required.cjs",
+    "add:subscription-lock": "node scripts/add-subscription-lock-fields.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

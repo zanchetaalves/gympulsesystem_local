@@ -11,6 +11,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate, formatCPF, formatPhone, calculateAge } from "@/lib/utils";
 import { Plus, Search, Edit, Trash2, Camera } from "lucide-react";
 import { ClientForm } from "@/components/clients/ClientForm";
@@ -38,6 +45,7 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -54,19 +62,29 @@ const Clients = () => {
 
   const { subscriptions } = useSubscriptions();
 
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.cpf && client.cpf.includes(searchTerm)) ||
-      (client.phone && client.phone.includes(searchTerm))
-  );
-
   const getClientSubscriptionStatus = (clientId: string) => {
     const subscription = subscriptions.find(
       (sub) => sub.clientId === clientId && sub.active
     );
     return subscription ? "Ativo" : "Inativo";
   };
+
+  const filteredClients = clients.filter(
+    (client) => {
+      // Filtro de busca por texto
+      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.cpf && client.cpf.includes(searchTerm)) ||
+        (client.phone && client.phone.includes(searchTerm));
+
+      // Filtro por status
+      const clientStatus = getClientSubscriptionStatus(client.id);
+      const matchesStatus = statusFilter === "todos" ||
+        (statusFilter === "ativo" && clientStatus === "Ativo") ||
+        (statusFilter === "inativo" && clientStatus === "Inativo");
+
+      return matchesSearch && matchesStatus;
+    }
+  );
 
   const handleCreateClient = async (data: any) => {
     createClient.mutate({
@@ -81,7 +99,7 @@ const Clients = () => {
 
   const handleEditClient = async (data: any) => {
     if (!selectedClient) return;
-    
+
     updateClient.mutate({
       ...data,
       id: selectedClient.id // Ensure the client ID is included for the update
@@ -138,10 +156,10 @@ const Clients = () => {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Buscar Cliente</CardTitle>
+          <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -151,6 +169,18 @@ const Clients = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
               />
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>

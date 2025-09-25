@@ -58,6 +58,8 @@ const createFormSchema = (existingSubscriptions: Subscription[], currentSubscrip
       message: "Data de início inválida",
     }),
     active: z.boolean().default(true),
+    locked: z.boolean().default(false),
+    lockDays: z.number().min(1, "Deve ser pelo menos 1 dia").optional(),
   });
 };
 
@@ -67,6 +69,8 @@ type SubscriptionFormData = {
   plan: "Mensal" | "Trimestral" | "Anual";
   startDate: string;
   active: boolean;
+  locked: boolean;
+  lockDays?: number;
 };
 
 interface SubscriptionFormProps {
@@ -83,6 +87,7 @@ export function SubscriptionForm({
   selectedClientId
 }: SubscriptionFormProps) {
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [isLocked, setIsLocked] = useState(defaultValues?.locked || false);
   const [startDateInput, setStartDateInput] = useState(() => {
     if (defaultValues?.startDate) {
       const date = new Date(defaultValues.startDate);
@@ -140,14 +145,18 @@ export function SubscriptionForm({
     resolver: zodResolver(dynamicSchema),
     defaultValues: {
       active: true,
+      locked: false,
       ...formattedDefaultValues,
       clientId: selectedClientId || defaultValues?.clientId || "",
+      lockDays: defaultValues?.lockDays || undefined,
     },
   });
 
   useEffect(() => {
     const planType = form.watch("plan") as PlanType;
     const startDateString = form.watch("startDate");
+    const locked = form.watch("locked");
+    const lockDays = form.watch("lockDays");
 
     if (planType && startDateString) {
       try {
@@ -162,7 +171,13 @@ export function SubscriptionForm({
 
         const planInfo = plans.find(p => p.type === planType);
         if (planInfo) {
-          const calculatedEndDate = addMonths(startDate, planInfo.durationMonths);
+          let calculatedEndDate = addMonths(startDate, planInfo.durationMonths);
+
+          // Se a matrícula está trancada e tem dias informados, adicionar os dias
+          if (locked && lockDays && lockDays > 0) {
+            calculatedEndDate = new Date(calculatedEndDate.getTime() + (lockDays * 24 * 60 * 60 * 1000));
+          }
+
           // Verificar se a data calculada também é válida
           if (isValid(calculatedEndDate)) {
             setEndDate(calculatedEndDate);
@@ -177,7 +192,7 @@ export function SubscriptionForm({
     } else {
       setEndDate(null);
     }
-  }, [form.watch("plan"), form.watch("startDate"), plans]);
+  }, [form.watch("plan"), form.watch("startDate"), form.watch("locked"), form.watch("lockDays"), plans]);
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -306,9 +321,64 @@ export function SubscriptionForm({
             disabled
           />
           <p className="text-sm text-muted-foreground mt-1">
-            Data calculada automaticamente com base no plano.
+            Data calculada automaticamente com base no plano{form.watch("locked") && form.watch("lockDays") ? ` + ${form.watch("lockDays")} dias de trancamento` : ''}.
           </p>
         </div>
+
+        <FormField
+          control={form.control}
+          name="locked"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    setIsLocked(checked as boolean);
+                    if (!checked) {
+                      form.setValue("lockDays", undefined);
+                    }
+                  }}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Trancar</FormLabel>
+                <p className="text-sm text-muted-foreground">
+                  Trancar matrícula por um período determinado
+                </p>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {form.watch("locked") && (
+          <FormField
+            control={form.control}
+            name="lockDays"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quantidade de dias para trancamento</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 30"
+                    value={field.value || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value ? parseInt(value) : undefined);
+                    }}
+                  />
+                </FormControl>
+                <p className="text-sm text-muted-foreground">
+                  Os dias serão adicionados à data de término da matrícula
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

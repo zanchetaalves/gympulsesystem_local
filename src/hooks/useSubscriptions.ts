@@ -38,19 +38,31 @@ export const dbToAppSubscription = (dbSubscription: any): Subscription => ({
   startDate: new Date(dbSubscription.start_date),
   endDate: new Date(dbSubscription.end_date),
   active: dbSubscription.active ?? true,
+  locked: dbSubscription.locked ?? false,
+  lockDays: dbSubscription.lock_days || undefined,
 });
 
-export const appToDbSubscription = (subscription: Partial<Subscription>) => ({
-  client_id: subscription.clientId,
-  plan: subscription.plan,
-  start_date: subscription.startDate instanceof Date
-    ? subscription.startDate.toISOString().split('T')[0]
-    : subscription.startDate,
-  end_date: subscription.endDate instanceof Date
-    ? subscription.endDate.toISOString().split('T')[0]
-    : subscription.endDate,
-  active: subscription.active
-});
+export const appToDbSubscription = (subscription: Partial<Subscription>) => {
+  const result: any = {};
+
+  if (subscription.clientId !== undefined) result.client_id = subscription.clientId;
+  if (subscription.plan !== undefined) result.plan = subscription.plan;
+  if (subscription.startDate !== undefined) {
+    result.start_date = subscription.startDate instanceof Date
+      ? subscription.startDate.toISOString().split('T')[0]
+      : subscription.startDate;
+  }
+  if (subscription.endDate !== undefined) {
+    result.end_date = subscription.endDate instanceof Date
+      ? subscription.endDate.toISOString().split('T')[0]
+      : subscription.endDate;
+  }
+  if (subscription.active !== undefined) result.active = subscription.active;
+  if (subscription.locked !== undefined) result.locked = subscription.locked;
+  if (subscription.lockDays !== undefined) result.lock_days = subscription.lockDays;
+
+  return result;
+};
 
 export const useSubscriptions = () => {
   const { toast } = useToast();

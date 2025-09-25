@@ -15,6 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, BarChart2, Search } from "lucide-react";
 import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -34,6 +41,11 @@ const Subscriptions = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
+
+  // Estados para filtros
+  const [clientFilter, setClientFilter] = useState("");
+  const [planFilter, setPlanFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState("todos");
 
   // Using hooks to fetch data from Supabase
   const {
@@ -105,6 +117,28 @@ const Subscriptions = () => {
     .filter(client =>
       client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
     );
+
+  // Filter subscriptions based on filters
+  const filteredSubscriptions = subscriptions.filter((subscription) => {
+    const client = clients.find(c => c.id === subscription.clientId);
+    const status = getSubscriptionStatus(subscription);
+
+    // Filtro por cliente (busca por texto no nome)
+    const matchesClient = !clientFilter ||
+      (client && client.name.toLowerCase().includes(clientFilter.toLowerCase()));
+
+    // Filtro por plano
+    const matchesPlan = planFilter === "todos" || subscription.plan === planFilter;
+
+    // Filtro por status
+    const matchesStatus = statusFilter === "todos" ||
+      (statusFilter === "ativo" && status === "active") ||
+      (statusFilter === "inativo" && !subscription.active) ||
+      (statusFilter === "expirado" && status === "expired") ||
+      (statusFilter === "vencendo" && status === "expiring");
+
+    return matchesClient && matchesPlan && matchesStatus;
+  });
 
   return (
     <div className="animate-fade-in">
@@ -230,6 +264,53 @@ const Subscriptions = () => {
         ))}
       </div>
 
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar por nome do cliente"
+                value={clientFilter}
+                onChange={(e) => setClientFilter(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div>
+              <Select value={planFilter} onValueChange={setPlanFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Planos</SelectItem>
+                  <SelectItem value="Mensal">Mensal</SelectItem>
+                  <SelectItem value="Trimestral">Trimestral</SelectItem>
+                  <SelectItem value="Anual">Anual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="expirado">Expirado</SelectItem>
+                  <SelectItem value="vencendo">Vencendo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Lista de Matrículas</CardTitle>
@@ -256,14 +337,14 @@ const Subscriptions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subscriptions.length === 0 ? (
+                {filteredSubscriptions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-4">
-                      Nenhuma matrícula cadastrada
+                      {subscriptions.length === 0 ? "Nenhuma matrícula cadastrada" : "Nenhuma matrícula encontrada com os filtros aplicados"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  subscriptions.map((subscription) => {
+                  filteredSubscriptions.map((subscription) => {
                     const client = clients.find(c => c.id === subscription.clientId);
                     const status = getSubscriptionStatus(subscription);
                     const planColor = plans.find(p => p.type === subscription.plan)?.color || '';

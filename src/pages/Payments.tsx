@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, BarChart2, Search } from "lucide-react";
+import { Plus, Check, BarChart2, Search, X } from "lucide-react";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 import {
   Dialog,
@@ -32,6 +32,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Payment, Subscription } from "@/types";
 import { usePayments } from "@/hooks/usePayments";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -44,6 +51,12 @@ const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [subscriptionSearchQuery, setSubscriptionSearchQuery] = useState("");
+
+  // Estados para filtros
+  const [clientFilter, setClientFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [methodFilter, setMethodFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState("todos");
 
   // Usando hooks personalizados
   const {
@@ -112,6 +125,34 @@ const Payments = () => {
       const clientName = sub.client?.name || "";
       return clientName.toLowerCase().includes(subscriptionSearchQuery.toLowerCase());
     });
+
+  // Filter payments based on filters
+  const filteredPayments = payments.filter((payment) => {
+    // Filtro por cliente (busca por texto no nome)
+    let matchesClient = true;
+    if (clientFilter) {
+      const subscription = subscriptions.find(sub => sub.id === payment.subscriptionId);
+      const client = subscription ? clients.find(c => c.id === subscription.clientId) : null;
+      matchesClient = client ? client.name.toLowerCase().includes(clientFilter.toLowerCase()) : false;
+    }
+
+    // Filtro por data
+    let matchesDate = true;
+    if (dateFilter) {
+      const paymentDate = payment.paymentDate.toISOString().split('T')[0];
+      matchesDate = paymentDate === dateFilter;
+    }
+
+    // Filtro por método
+    const matchesMethod = methodFilter === "todos" || payment.paymentMethod === methodFilter;
+
+    // Filtro por status
+    const matchesStatus = statusFilter === "todos" ||
+      (statusFilter === "confirmado" && payment.confirmed) ||
+      (statusFilter === "pendente" && !payment.confirmed);
+
+    return matchesClient && matchesDate && matchesMethod && matchesStatus;
+  });
 
   return (
     <div className="animate-fade-in">
@@ -208,6 +249,73 @@ const Payments = () => {
         </Dialog>
       </div>
 
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar por nome do cliente"
+                value={clientFilter}
+                onChange={(e) => setClientFilter(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="relative">
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="text-foreground [&::-webkit-calendar-picker-indicator]:opacity-80 [&::-webkit-calendar-picker-indicator]:cursor-pointer pr-8"
+                title="Filtrar por data"
+              />
+              {dateFilter && (
+                <button
+                  type="button"
+                  onClick={() => setDateFilter("")}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Limpar data"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <div>
+              <Select value={methodFilter} onValueChange={setMethodFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Método" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Métodos</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                  <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Status</SelectItem>
+                  <SelectItem value="confirmado">Confirmado</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Histórico de Pagamentos</CardTitle>
@@ -234,14 +342,14 @@ const Payments = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payments.length === 0 ? (
+                {filteredPayments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-4">
-                      Nenhum pagamento cadastrado
+                      {payments.length === 0 ? "Nenhum pagamento cadastrado" : "Nenhum pagamento encontrado com os filtros aplicados"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  payments.map((payment) => (
+                  filteredPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.client?.name || "Cliente não encontrado"}</TableCell>
                       <TableCell>{formatDate(payment.paymentDate)}</TableCell>

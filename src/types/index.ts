@@ -27,6 +27,8 @@ export interface Subscription {
   startDate: Date;
   endDate: Date;
   active: boolean;
+  locked?: boolean; // Indica se a matrícula está trancada
+  lockDays?: number; // Quantidade de dias de trancamento
   client?: Client; // For joined data
 }
 
