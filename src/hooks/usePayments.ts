@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:3001/api';
 
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('access_token');
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ export const dbToAppPayment = (dbPayment: any): Payment => ({
   id: dbPayment.id,
   subscriptionId: dbPayment.subscription_id,
   paymentDate: new Date(dbPayment.payment_date),
-  amount: dbPayment.amount,
+  amount: typeof dbPayment.amount === 'number' ? dbPayment.amount : parseFloat(dbPayment.amount) || 0,
   paymentMethod: dbPayment.payment_method,
   confirmed: dbPayment.confirmed ?? false,
 });

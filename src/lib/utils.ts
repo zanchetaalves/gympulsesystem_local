@@ -13,11 +13,23 @@ export function formatDate(date: Date | string): string {
 }
 
 // Format currency to Brazilian Real: R$ 100,00
-export function formatCurrency(value: number): string {
+export function formatCurrency(value: number | string | any): string {
+  // Convert to safe number first
+  let numValue: number;
+
+  if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+    numValue = value;
+  } else if (typeof value === 'string') {
+    const parsed = parseFloat(value.replace(/[^\d.,-]/g, '').replace(',', '.'));
+    numValue = !isNaN(parsed) && isFinite(parsed) ? parsed : 0;
+  } else {
+    numValue = 0;
+  }
+
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
-  }).format(value);
+  }).format(numValue);
 }
 
 // Check if a subscription is about to expire (7 days or less)

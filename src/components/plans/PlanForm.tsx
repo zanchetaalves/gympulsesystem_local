@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PriceInput } from "@/components/form/PriceInput";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -33,11 +34,11 @@ const formSchema = z.object({
   type: z.string({
     required_error: "Tipo é obrigatório",
   }).min(1, "Tipo é obrigatório"),
-  priceBrl: z.string().transform((val) => {
-    const num = parseFloat(val.replace(',', '.'));
+  priceBrl: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
     if (isNaN(num)) throw new Error("Preço deve ser um número válido");
     return num;
-  }).refine((val) => val >= 0, "Preço deve ser maior que zero"),
+  }).refine((val) => val > 0, "Preço deve ser maior que zero"),
   description: z.string().optional(),
   durationMonths: z.string().transform((val) => {
     const num = parseInt(val);
@@ -117,18 +118,14 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
           control={form.control}
           name="priceBrl"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Preço (R$)</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  {...field}
-                  value={field.value ? String(field.value) : ''}
-                  placeholder="0,00"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <PriceInput
+              label="Preço (R$)"
+              placeholder="0,00"
+              value={field.value}
+              onChange={field.onChange}
+              required
+              error={form.formState.errors.priceBrl?.message}
+            />
           )}
         />
 

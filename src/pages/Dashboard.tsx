@@ -1,14 +1,33 @@
 
+import { useState, useEffect } from "react";
 import { CardMetric } from "@/components/ui/card-metric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { BarChart2, Calendar, CreditCard, User, Clock } from "lucide-react";
+import { BarChart2, Calendar, CreditCard, User, Clock, EyeOff, Eye } from "lucide-react";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useClients } from "@/hooks/useClients";
 import { usePayments } from "@/hooks/usePayments";
 import { useAppointments } from "@/hooks/useAppointments";
+import { sumConfirmedPayments } from "@/lib/money-utils";
 
 const Dashboard = () => {
+  const [showRevenue, setShowRevenue] = useState(false);
+
+  // Carregar preferência salva no localStorage
+  useEffect(() => {
+    const savedPreference = localStorage.getItem('dashboard-show-revenue');
+    if (savedPreference !== null) {
+      setShowRevenue(JSON.parse(savedPreference));
+    }
+  }, []);
+
+  // Salvar preferência quando mudada
+  const toggleRevenue = () => {
+    const newValue = !showRevenue;
+    setShowRevenue(newValue);
+    localStorage.setItem('dashboard-show-revenue', JSON.stringify(newValue));
+  };
+
   const { subscriptions } = useSubscriptions();
   const { clients } = useClients();
   const { payments } = usePayments();
@@ -18,9 +37,7 @@ const Dashboard = () => {
   const totalClients = clients.length;
   const activeSubscriptions = subscriptions.filter(sub => sub.active).length;
 
-  const totalRevenue = payments
-    .filter(payment => payment.confirmed)
-    .reduce((total, payment) => total + payment.amount, 0);
+  const totalRevenue = sumConfirmedPayments(payments);
 
   const expiringSubscriptions = subscriptions
     .filter(sub => {
@@ -47,11 +64,52 @@ const Dashboard = () => {
           value={activeSubscriptions}
           icon={<BarChart2 className="h-6 w-6 text-gym-primary" />}
         />
-        <CardMetric
-          title="Receita Total"
-          value={formatCurrency(totalRevenue)}
-          icon={<CreditCard className="h-6 w-6 text-gym-primary" />}
-        />
+        {/* Card customizado para receita com toggle de visibilidade */}
+        <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200" onClick={toggleRevenue}>
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Receita Total</p>
+                <div className="flex items-center mt-2 min-h-[2rem]">
+                  {showRevenue ? (
+                    <h3 className="text-2xl font-bold transition-all duration-300">{formatCurrency(totalRevenue)}</h3>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-6 bg-muted-foreground/40 rounded-full"></div>
+                        <div className="w-2 h-6 bg-muted-foreground/40 rounded-full"></div>
+                        <div className="w-2 h-6 bg-muted-foreground/40 rounded-full"></div>
+                        <div className="w-8 h-6 bg-muted-foreground/40 rounded-full"></div>
+                        <div className="w-2 h-6 bg-muted-foreground/40 rounded-full"></div>
+                        <div className="w-2 h-6 bg-muted-foreground/40 rounded-full"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center transition-all duration-200">
+                  {showRevenue ? (
+                    <>
+                      <Eye className="h-3 w-3 mr-1" />
+                      Toque para ocultar a receita
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-3 w-3 mr-1" />
+                      Toque para exibir a receita
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="bg-gym-light p-3 rounded-lg transition-all duration-200">
+                {showRevenue ? (
+                  <CreditCard className="h-6 w-6 text-gym-primary" />
+                ) : (
+                  <EyeOff className="h-6 w-6 text-gym-primary" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <CardMetric
           title="Próximos Compromissos"
           value={upcomingAppointments.length}

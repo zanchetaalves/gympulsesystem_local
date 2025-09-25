@@ -24,23 +24,50 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addMonths, format, parse, isValid } from "date-fns";
 import { usePlans } from "@/hooks/usePlans";
 import { useClients } from "@/hooks/useClients";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { formatCurrency } from "@/lib/utils";
 
-const formSchema = z.object({
-  id: z.string().optional(),
-  clientId: z.string({
-    required_error: "Cliente é obrigatório",
-  }),
-  plan: z.enum(["Mensal", "Trimestral", "Anual"], {
-    required_error: "Plano é obrigatório",
-  }),
-  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Data de início inválida",
-  }),
-  active: z.boolean().default(true),
-});
+// Função para criar schema com validação dinâmica
+const createFormSchema = (existingSubscriptions: Subscription[], currentSubscriptionId?: string) => {
+  return z.object({
+    id: z.string().optional(),
+    clientId: z.string({
+      required_error: "Cliente é obrigatório",
+    }).refine((clientId) => {
+      // Permitir se estiver editando a mesma matrícula
+      if (currentSubscriptionId) {
+        return true;
+      }
 
-type SubscriptionFormData = z.infer<typeof formSchema>;
+      // Verificar se o cliente já possui matrícula ativa
+      const now = new Date();
+      const activeSubscription = existingSubscriptions.find(sub =>
+        sub.clientId === clientId &&
+        sub.active &&
+        new Date(sub.endDate) > now
+      );
+
+      return !activeSubscription;
+    }, {
+      message: "Este cliente já possui uma matrícula ativa. Aguarde o vencimento da atual."
+    }),
+    plan: z.enum(["Mensal", "Trimestral", "Anual"], {
+      required_error: "Plano é obrigatório",
+    }),
+    startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "Data de início inválida",
+    }),
+    active: z.boolean().default(true),
+  });
+};
+
+type SubscriptionFormData = {
+  id?: string;
+  clientId: string;
+  plan: "Mensal" | "Trimestral" | "Anual";
+  startDate: string;
+  active: boolean;
+};
 
 interface SubscriptionFormProps {
   onSubmit: (data: any) => void;
@@ -49,22 +76,45 @@ interface SubscriptionFormProps {
   selectedClientId?: string;
 }
 
-export function SubscriptionForm({ 
-  onSubmit, 
-  isLoading, 
+export function SubscriptionForm({
+  onSubmit,
+  isLoading,
   defaultValues,
-  selectedClientId 
+  selectedClientId
 }: SubscriptionFormProps) {
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [startDateInput, setStartDateInput] = useState(
-    defaultValues?.startDate 
-      ? format(new Date(defaultValues.startDate), "dd/MM/yyyy")
-      : format(new Date(), "dd/MM/yyyy")
-  );
+  const [startDateInput, setStartDateInput] = useState(() => {
+    if (defaultValues?.startDate) {
+      const date = new Date(defaultValues.startDate);
+      return isValid(date) ? format(date, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy");
+    }
+    return format(new Date(), "dd/MM/yyyy");
+  });
   const { plans } = usePlans();
   const { clients } = useClients();
+  const { subscriptions } = useSubscriptions();
   const activePlans = plans.filter(p => p.active);
-  
+
+  // Função para verificar se um cliente possui matrícula ativa
+  const clientHasActiveSubscription = (clientId: string): boolean => {
+    const now = new Date();
+    return subscriptions.some(sub =>
+      sub.clientId === clientId &&
+      sub.active &&
+      new Date(sub.endDate) > now
+    );
+  };
+
+  // Filtrar clientes que não possuem matrícula ativa (exceto ao editar)
+  const availableClients = clients.filter(client => {
+    // Se estiver editando, permitir o cliente atual
+    if (defaultValues?.clientId === client.id) {
+      return true;
+    }
+    // Caso contrário, apenas clientes sem matrícula ativa
+    return !clientHasActiveSubscription(client.id);
+  });
+
   // Simplify date formatting to preserve the exact date
   const getISODateString = (dateObj: Date): string => {
     const year = dateObj.getFullYear();
@@ -72,16 +122,22 @@ export function SubscriptionForm({
     const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
   const formattedDefaultValues = {
     ...defaultValues,
-    startDate: defaultValues?.startDate 
-      ? getISODateString(new Date(defaultValues.startDate))
+    startDate: defaultValues?.startDate
+      ? (() => {
+        const date = new Date(defaultValues.startDate);
+        return isValid(date) ? getISODateString(date) : getISODateString(new Date());
+      })()
       : getISODateString(new Date()),
   };
-  
+
+  // Criar o schema dinâmico com as matrículas existentes
+  const dynamicSchema = createFormSchema(subscriptions, defaultValues?.id);
+
   const form = useForm<SubscriptionFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       active: true,
       ...formattedDefaultValues,
@@ -92,18 +148,30 @@ export function SubscriptionForm({
   useEffect(() => {
     const planType = form.watch("plan") as PlanType;
     const startDateString = form.watch("startDate");
-    
+
     if (planType && startDateString) {
       try {
         // Criar a data usando UTC para evitar ajustes de fuso horário
         const startDate = new Date(startDateString);
+
+        // Verificar se a data é válida
+        if (!isValid(startDate)) {
+          setEndDate(null);
+          return;
+        }
+
         const planInfo = plans.find(p => p.type === planType);
         if (planInfo) {
           const calculatedEndDate = addMonths(startDate, planInfo.durationMonths);
-          // Garantir que a data final também não sofra ajuste de fuso horário
-          setEndDate(calculatedEndDate);
+          // Verificar se a data calculada também é válida
+          if (isValid(calculatedEndDate)) {
+            setEndDate(calculatedEndDate);
+          } else {
+            setEndDate(null);
+          }
         }
       } catch (error) {
+        console.warn('Erro ao calcular data de término:', error);
         setEndDate(null);
       }
     } else {
@@ -114,10 +182,10 @@ export function SubscriptionForm({
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setStartDateInput(value);
-    
+
     // Parse the date using date-fns
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-    
+
     if (isValid(parsedDate)) {
       // Use the exact date as a string in YYYY-MM-DD format
       const formattedDate = getISODateString(parsedDate);
@@ -127,17 +195,17 @@ export function SubscriptionForm({
 
   const handleSubmit = (data: SubscriptionFormData) => {
     if (!endDate) return;
-    
+
     // Convert startDate string to Date object without timezone adjustments
     const startDateParts = data.startDate.split('-').map(Number);
     const startDate = new Date(startDateParts[0], startDateParts[1] - 1, startDateParts[2]);
-    
+
     // Handle endDate the same way
     const endDateYear = endDate.getFullYear();
     const endDateMonth = endDate.getMonth();
     const endDateDay = endDate.getDate();
     const endDateObj = new Date(endDateYear, endDateMonth, endDateDay);
-    
+
     const formattedData = {
       ...data,
       startDate,
@@ -145,7 +213,7 @@ export function SubscriptionForm({
       clientId: data.clientId,
       active: data.active,
     };
-    
+
     onSubmit(formattedData);
   };
 
@@ -158,9 +226,9 @@ export function SubscriptionForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cliente</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
-                defaultValue={field.value} 
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
                 disabled={!!selectedClientId}
               >
                 <FormControl>
@@ -169,11 +237,17 @@ export function SubscriptionForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
+                  {availableClients.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      Todos os clientes já possuem matrículas ativas
+                    </div>
+                  ) : (
+                    availableClients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -213,9 +287,9 @@ export function SubscriptionForm({
             <FormItem>
               <FormLabel>Data de Início</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="DD/MM/AAAA" 
-                  value={startDateInput} 
+                <Input
+                  placeholder="DD/MM/AAAA"
+                  value={startDateInput}
                   onChange={handleStartDateChange}
                 />
               </FormControl>
@@ -226,10 +300,10 @@ export function SubscriptionForm({
 
         <div className="mb-4">
           <FormLabel>Data de Término</FormLabel>
-          <Input 
-            type="text" 
-            value={endDate ? format(endDate, "dd/MM/yyyy") : ''} 
-            disabled 
+          <Input
+            type="text"
+            value={endDate && isValid(endDate) ? format(endDate, "dd/MM/yyyy") : ''}
+            disabled
           />
           <p className="text-sm text-muted-foreground mt-1">
             Data calculada automaticamente com base no plano.

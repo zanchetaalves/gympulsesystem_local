@@ -23,7 +23,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useClients } from "@/hooks/useClients";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { usePlans } from "@/hooks/usePlans";
 import { format, parse, isValid } from "date-fns";
+import { PriceInput, usePriceField } from "@/components/form/PriceInput";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -33,11 +35,11 @@ const formSchema = z.object({
   payment_date: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Data de pagamento inválida",
   }),
-  amount: z.number({
-    required_error: "Valor é obrigatório",
-  }).min(0, {
-    message: "Valor deve ser maior que zero",
-  }),
+  amount: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+    if (isNaN(num)) throw new Error("Valor deve ser um número válido");
+    return num;
+  }).refine((val) => val > 0, "Valor deve ser maior que zero"),
   payment_method: z.enum(["pix", "dinheiro", "cartao_debito", "cartao_credito", "boleto", "transferencia"], {
     required_error: "Método de pagamento é obrigatório",
   }),
@@ -56,13 +58,16 @@ interface PaymentFormProps {
 export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscriptionId }: PaymentFormProps) {
   const { subscriptions } = useSubscriptions();
   const { clients } = useClients();
+  const { plans } = usePlans();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [paymentDateInput, setPaymentDateInput] = useState(
-    defaultValues?.paymentDate 
-      ? format(new Date(defaultValues.paymentDate), "dd/MM/yyyy")
-      : format(new Date(), "dd/MM/yyyy")
-  );
-  
+  const [paymentDateInput, setPaymentDateInput] = useState(() => {
+    if (defaultValues?.paymentDate) {
+      const date = new Date(defaultValues.paymentDate);
+      return isValid(date) ? format(date, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy");
+    }
+    return format(new Date(), "dd/MM/yyyy");
+  });
+
   // Simplify date formatting to preserve the exact date
   const getISODateString = (dateObj: Date): string => {
     const year = dateObj.getFullYear();
@@ -70,7 +75,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
   // Create enriched subscriptions with client data
   const enrichedSubscriptions = subscriptions.map(subscription => {
     const client = clients.find(client => client.id === subscription.clientId);
@@ -79,26 +84,35 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
       clientName: client ? client.name : "Cliente não encontrado"
     };
   });
-  
+
+  // Função para obter o preço do plano
+  const getPlanPrice = (planType: string): number => {
+    const plan = plans.find(p => p.type === planType);
+    return plan ? plan.priceBrl : 0;
+  };
+
   const formattedDefaultValues = {
     ...defaultValues,
-    payment_date: defaultValues?.paymentDate 
-      ? getISODateString(new Date(defaultValues.paymentDate))
+    payment_date: defaultValues?.paymentDate
+      ? (() => {
+        const date = new Date(defaultValues.paymentDate);
+        return isValid(date) ? getISODateString(date) : getISODateString(new Date());
+      })()
       : getISODateString(new Date()),
     subscription_id: selectedSubscriptionId || defaultValues?.subscription?.id || "",
     amount: defaultValues?.amount || 0,
     payment_method: defaultValues?.paymentMethod || "pix",
     confirmed: defaultValues?.confirmed || false,
   };
-  
+
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: formattedDefaultValues,
   });
 
   // Filter subscriptions by selected client
-  const clientSubscriptions = selectedClientId 
-    ? enrichedSubscriptions.filter(sub => sub.clientId === selectedClientId) 
+  const clientSubscriptions = selectedClientId
+    ? enrichedSubscriptions.filter(sub => sub.clientId === selectedClientId)
     : enrichedSubscriptions;
 
   useEffect(() => {
@@ -115,22 +129,44 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
   useEffect(() => {
     if (selectedSubscriptionId) {
       form.setValue("subscription_id", selectedSubscriptionId);
-      
+
       // Update the client ID as well
       const subscription = subscriptions.find(sub => sub.id === selectedSubscriptionId);
       if (subscription) {
         setSelectedClientId(subscription.clientId);
+
+        // Sugerir valor do plano automaticamente (apenas se não houver valor padrão)
+        if (!defaultValues?.amount) {
+          const planPrice = getPlanPrice(subscription.plan);
+          if (planPrice > 0) {
+            form.setValue("amount", planPrice);
+          }
+        }
       }
     }
-  }, [selectedSubscriptionId, subscriptions, form]);
+  }, [selectedSubscriptionId, subscriptions, form, plans, defaultValues?.amount, getPlanPrice]);
+
+  // Sugerir valor quando a matrícula for alterada no formulário
+  useEffect(() => {
+    const subscription_id = form.watch("subscription_id");
+    if (subscription_id && !defaultValues?.amount) {
+      const subscription = subscriptions.find(sub => sub.id === subscription_id);
+      if (subscription) {
+        const planPrice = getPlanPrice(subscription.plan);
+        if (planPrice > 0) {
+          form.setValue("amount", planPrice);
+        }
+      }
+    }
+  }, [form.watch("subscription_id"), subscriptions, plans, defaultValues?.amount, form, getPlanPrice]);
 
   const handlePaymentDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPaymentDateInput(value);
-    
+
     // Parse the date using date-fns
     const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-    
+
     if (isValid(parsedDate)) {
       // Use the exact date as a string in YYYY-MM-DD format
       const formattedDate = getISODateString(parsedDate);
@@ -141,11 +177,11 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
   const handleSubmit = (data: PaymentFormData) => {
     console.log("Form data submitted:", data);
     const subscription = subscriptions.find(sub => sub.id === data.subscription_id);
-    
+
     // Convert payment_date string to Date object without timezone adjustments
     const paymentDateParts = data.payment_date.split('-').map(Number);
     const paymentDate = new Date(paymentDateParts[0], paymentDateParts[1] - 1, paymentDateParts[2]);
-    
+
     const formattedData = {
       id: data.id,
       paymentDate: paymentDate,
@@ -155,7 +191,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
       subscription: subscription || null,
       subscriptionId: data.subscription_id,
     };
-    
+
     console.log("Formatted data:", formattedData);
     onSubmit(formattedData);
   };
@@ -215,9 +251,9 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
             <FormItem>
               <FormLabel>Data de Pagamento</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="DD/MM/AAAA" 
-                  value={paymentDateInput} 
+                <Input
+                  placeholder="DD/MM/AAAA"
+                  value={paymentDateInput}
                   onChange={handlePaymentDateChange}
                 />
               </FormControl>
@@ -230,18 +266,14 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
           control={form.control}
           name="amount"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Valor (R$)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  step="0.01"
-                  {...field} 
-                  onChange={e => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <PriceInput
+              label="Valor (R$)"
+              placeholder="0,00"
+              value={field.value}
+              onChange={field.onChange}
+              required
+              error={form.formState.errors.amount?.message}
+            />
           )}
         />
 

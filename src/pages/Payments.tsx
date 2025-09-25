@@ -44,15 +44,15 @@ const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [subscriptionSearchQuery, setSubscriptionSearchQuery] = useState("");
-  
+
   // Usando hooks personalizados
-  const { 
-    payments, 
+  const {
+    payments,
     isLoading: isLoadingPayments,
     createPayment,
     updatePayment
   } = usePayments();
-  
+
   const { subscriptions } = useSubscriptions();
   const { clients } = useClients();
 
@@ -77,7 +77,7 @@ const Payments = () => {
 
   const handleConfirmPayment = async () => {
     if (!selectedPayment) return;
-    
+
     updatePayment.mutate({
       ...selectedPayment,
       id: selectedPayment.id, // Ensure the payment ID is included for the update
@@ -96,9 +96,18 @@ const Payments = () => {
     setCreateDialogOpen(true);
   };
 
-  // Filter subscriptions based on client name search query
+  // Função para verificar se uma matrícula já possui pagamento confirmado
+  const subscriptionHasConfirmedPayment = (subscriptionId: string): boolean => {
+    return payments.some(payment =>
+      payment.subscriptionId === subscriptionId &&
+      payment.confirmed
+    );
+  };
+
+  // Filter subscriptions based on client name search query and confirmed payments
   const filteredSubscriptions = enrichedSubscriptions
     .filter(sub => sub.active)
+    .filter(sub => !subscriptionHasConfirmedPayment(sub.id)) // Excluir matrículas com pagamento confirmado
     .filter(sub => {
       const clientName = sub.client?.name || "";
       return clientName.toLowerCase().includes(subscriptionSearchQuery.toLowerCase());
@@ -142,8 +151,22 @@ const Payments = () => {
                 <TableBody>
                   {filteredSubscriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">
-                        Nenhuma matrícula encontrada
+                      <TableCell colSpan={3} className="text-center py-6">
+                        {subscriptionSearchQuery ? (
+                          <div>
+                            <p className="text-muted-foreground">Nenhuma matrícula encontrada</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Tente ajustar o termo de busca
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-muted-foreground">Nenhuma matrícula disponível</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Todas as matrículas já possuem pagamentos confirmados
+                            </p>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -154,7 +177,7 @@ const Payments = () => {
                         </TableCell>
                         <TableCell>{subscription.plan}</TableCell>
                         <TableCell>
-                          <Button 
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => selectSubscriptionForPayment(subscription)}
@@ -170,14 +193,14 @@ const Payments = () => {
             </div>
           </DialogContent>
         </Dialog>
-        
+
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Cadastrar Novo Pagamento</DialogTitle>
             </DialogHeader>
-            <PaymentForm 
-              onSubmit={handleCreatePayment} 
+            <PaymentForm
+              onSubmit={handleCreatePayment}
               isLoading={createPayment.isPending}
               selectedSubscriptionId={selectedSubscription?.id}
             />
@@ -234,7 +257,7 @@ const Payments = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <AlertDialog 
+                        <AlertDialog
                           open={confirmDialogOpen && selectedPayment?.id === payment.id}
                           onOpenChange={(open) => {
                             setConfirmDialogOpen(open);
@@ -242,8 +265,8 @@ const Payments = () => {
                           }}
                         >
                           {!payment.confirmed && (
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => {
                                 setSelectedPayment(payment);
@@ -263,7 +286,7 @@ const Payments = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction 
+                              <AlertDialogAction
                                 onClick={handleConfirmPayment}
                                 disabled={updatePayment.isPending}
                                 className="bg-gym-primary text-primary-foreground hover:bg-gym-secondary"

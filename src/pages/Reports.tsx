@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 import { usePayments } from "@/hooks/usePayments";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useClients } from "@/hooks/useClients";
+import { toSafeNumber } from "@/lib/money-utils";
 
 const Reports = () => {
   const { payments } = usePayments();
@@ -17,16 +18,16 @@ const Reports = () => {
   // Calculate monthly payments for the current year
   const currentYear = new Date().getFullYear();
   const monthlyRevenue = Array(12).fill(0);
-  
+
   payments.forEach(payment => {
     if (payment.confirmed) {
       const paymentDate = new Date(payment.paymentDate);
       if (paymentDate.getFullYear() === currentYear) {
-        monthlyRevenue[paymentDate.getMonth()] += payment.amount;
+        monthlyRevenue[paymentDate.getMonth()] += toSafeNumber(payment.amount);
       }
     }
   });
-  
+
   const monthlyData = monthlyRevenue.map((amount, index) => ({
     month: format(new Date(currentYear, index, 1), 'MMM', { locale: ptBR }),
     amount
@@ -37,14 +38,14 @@ const Reports = () => {
   const activeCount = subscriptions.filter(sub => sub.active && new Date(sub.endDate) >= now).length;
   const expiredCount = subscriptions.filter(sub => new Date(sub.endDate) < now).length;
   const inactiveCount = subscriptions.filter(sub => !sub.active).length;
-  
+
   // Calculate clients by subscription status
   const clientStatusCounts = {
     active: 0,
     expired: 0,
     none: 0
   };
-  
+
   clients.forEach(client => {
     const clientSubs = subscriptions.filter(sub => sub.clientId === client.id);
     if (clientSubs.length === 0) {
@@ -59,7 +60,7 @@ const Reports = () => {
   return (
     <div className="animate-fade-in">
       <h1 className="text-2xl font-bold mb-6">Relatórios</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
           <CardHeader className="pb-2">
@@ -88,7 +89,7 @@ const Reports = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Matrículas por Status</CardTitle>
@@ -116,7 +117,7 @@ const Reports = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Faturamento {currentYear}</CardTitle>
@@ -131,7 +132,7 @@ const Reports = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Faturamento Mensal - {currentYear}</CardTitle>
@@ -142,7 +143,7 @@ const Reports = () => {
               <BarChart data={monthlyData}>
                 <XAxis dataKey="month" />
                 <YAxis tickFormatter={(value) => `R$${value}`} />
-                <Tooltip 
+                <Tooltip
                   formatter={(value) => [`${formatCurrency(Number(value))}`, 'Faturamento']}
                   labelFormatter={(label) => `Mês: ${label}`}
                 />

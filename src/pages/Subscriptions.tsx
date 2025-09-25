@@ -34,15 +34,15 @@ const Subscriptions = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
-  
+
   // Using hooks to fetch data from Supabase
-  const { 
-    subscriptions, 
+  const {
+    subscriptions,
     isLoading: isLoadingSubscriptions,
     createSubscription,
     updateSubscription
   } = useSubscriptions();
-  
+
   const { clients } = useClients();
   const { plans } = usePlans();
 
@@ -58,7 +58,7 @@ const Subscriptions = () => {
 
   const handleEditSubscription = async (data: any) => {
     if (!selectedSubscription) return;
-    
+
     updateSubscription.mutate({
       ...data,
       id: selectedSubscription.id // Ensure the subscription ID is included for the update
@@ -79,7 +79,7 @@ const Subscriptions = () => {
   const getSubscriptionStatus = (subscription: Subscription) => {
     const now = new Date();
     const endDate = new Date(subscription.endDate);
-    
+
     if (!subscription.active) return "inactive";
     if (endDate < now) return "expired";
     if (isAboutToExpire(endDate)) return "expiring";
@@ -89,10 +89,22 @@ const Subscriptions = () => {
   // Get active plans
   const activePlans = plans.filter(p => p.active);
 
-  // Filter clients based on search query
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
-  );
+  // Verificar se um cliente possui matrícula ativa
+  const clientHasActiveSubscription = (clientId: string): boolean => {
+    const now = new Date();
+    return subscriptions.some(sub =>
+      sub.clientId === clientId &&
+      sub.active &&
+      new Date(sub.endDate) > now
+    );
+  };
+
+  // Filter clients based on search query and active subscriptions
+  const filteredClients = clients
+    .filter(client => !clientHasActiveSubscription(client.id))
+    .filter(client =>
+      client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
 
   return (
     <div className="animate-fade-in">
@@ -132,8 +144,22 @@ const Subscriptions = () => {
                 <TableBody>
                   {filteredClients.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">
-                        Nenhum cliente encontrado
+                      <TableCell colSpan={3} className="text-center py-6">
+                        {clientSearchQuery ? (
+                          <div>
+                            <p className="text-muted-foreground">Nenhum cliente encontrado</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Tente ajustar o termo de busca
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-muted-foreground">Nenhum cliente disponível</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Todos os clientes já possuem matrículas ativas
+                            </p>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -142,7 +168,7 @@ const Subscriptions = () => {
                         <TableCell>{client.name}</TableCell>
                         <TableCell>{client.cpf}</TableCell>
                         <TableCell>
-                          <Button 
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => selectClientForSubscription(client)}
@@ -158,21 +184,21 @@ const Subscriptions = () => {
             </div>
           </DialogContent>
         </Dialog>
-        
+
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Cadastrar Nova Matrícula</DialogTitle>
             </DialogHeader>
-            <SubscriptionForm 
-              onSubmit={handleCreateSubscription} 
+            <SubscriptionForm
+              onSubmit={handleCreateSubscription}
               isLoading={createSubscription.isPending}
               selectedClientId={selectedClient?.id}
             />
           </DialogContent>
         </Dialog>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {activePlans.map((plan) => (
           <Card key={plan.id} className="overflow-hidden">
@@ -187,13 +213,13 @@ const Subscriptions = () => {
                 }).format(plan.priceBrl)}
               </div>
               <p className="text-muted-foreground mb-4">
-                {plan.durationMonths === 1 
+                {plan.durationMonths === 1
                   ? 'Mensal'
-                  : plan.durationMonths === 3 
-                    ? 'Trimestral' 
+                  : plan.durationMonths === 3
+                    ? 'Trimestral'
                     : 'Anual'}
               </p>
-              <Button 
+              <Button
                 className="w-full bg-gym-primary hover:bg-gym-secondary"
                 onClick={() => setSelectClientDialogOpen(true)}
               >
@@ -241,7 +267,7 @@ const Subscriptions = () => {
                     const client = clients.find(c => c.id === subscription.clientId);
                     const status = getSubscriptionStatus(subscription);
                     const planColor = plans.find(p => p.type === subscription.plan)?.color || '';
-                    
+
                     return (
                       <TableRow key={subscription.id}>
                         <TableCell className="font-medium">{client?.name || "Cliente não encontrado"}</TableCell>
@@ -254,34 +280,34 @@ const Subscriptions = () => {
                         <TableCell>{formatDate(subscription.endDate)}</TableCell>
                         <TableCell>
                           <Badge variant={
-                            status === "active" 
-                              ? "success" 
-                              : status === "expiring" 
-                                ? "warning" 
-                                : status === "expired" 
-                                  ? "destructive" 
+                            status === "active"
+                              ? "success"
+                              : status === "expiring"
+                                ? "warning"
+                                : status === "expired"
+                                  ? "destructive"
                                   : "outline"
                           }>
-                            {status === "active" 
-                              ? "Ativa" 
-                              : status === "expiring" 
-                                ? "A Vencer" 
-                                : status === "expired" 
-                                  ? "Vencida" 
+                            {status === "active"
+                              ? "Ativa"
+                              : status === "expiring"
+                                ? "A Vencer"
+                                : status === "expired"
+                                  ? "Vencida"
                                   : "Inativa"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Dialog 
-                            open={editDialogOpen && selectedSubscription?.id === subscription.id} 
+                          <Dialog
+                            open={editDialogOpen && selectedSubscription?.id === subscription.id}
                             onOpenChange={(open) => {
                               setEditDialogOpen(open);
                               if (!open) setSelectedSubscription(null);
                             }}
                           >
                             <DialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => setSelectedSubscription(subscription)}
                               >
@@ -293,9 +319,9 @@ const Subscriptions = () => {
                                 <DialogTitle>Editar Matrícula</DialogTitle>
                               </DialogHeader>
                               {selectedSubscription && (
-                                <SubscriptionForm 
-                                  onSubmit={handleEditSubscription} 
-                                  isLoading={updateSubscription.isPending} 
+                                <SubscriptionForm
+                                  onSubmit={handleEditSubscription}
+                                  isLoading={updateSubscription.isPending}
                                   defaultValues={selectedSubscription}
                                 />
                               )}
