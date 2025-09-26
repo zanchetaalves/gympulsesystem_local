@@ -169,3 +169,4 @@ echo    3. Teste manual: cd backend ^& node index.js
 echo.
 pause
 
+

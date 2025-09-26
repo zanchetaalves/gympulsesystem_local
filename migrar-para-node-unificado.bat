@@ -216,3 +216,4 @@ echo 🔥 A aplicação agora roda 100%% em Node.js!
 echo    Sem IIS, sem proxy, sem problemas! 🚀
 echo.
 pause
+

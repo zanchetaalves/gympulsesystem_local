@@ -167,3 +167,4 @@ echo    .\testar-funcionamento.bat
 echo.
 pause
 
+

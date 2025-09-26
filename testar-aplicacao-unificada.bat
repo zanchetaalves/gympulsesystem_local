@@ -197,3 +197,4 @@ echo 🧪 Teste manual:       cd C:\gym-pulse-production ^& node server-producao
 echo 🌐 Abrir aplicação:    start http://localhost:3000/
 echo.
 pause
+

@@ -299,3 +299,4 @@ echo   - Status: sc query GymPulseUnified
 echo   - Logs: C:\gym-pulse-production\logs\
 echo.
 exit /b 0
+
