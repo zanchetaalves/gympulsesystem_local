@@ -1,10 +1,9 @@
 @echo off
-chcp 65001 >nul
 echo ======================================================
 echo SETUP PRODUCAO - GYM PULSE SYSTEM
 echo ======================================================
 
-REM Verificar se está executando como administrador
+REM Verificar se esta executando como administrador
 net session >nul 2>&1
 if %errorLevel% == 0 (
     echo [OK] Executando como Administrador
@@ -20,7 +19,7 @@ set PROD_DIR=C:\gym-pulse-production
 echo.
 echo [INFO] Criando estrutura de producao em %PROD_DIR%...
 
-REM Criar diretório de produção
+REM Criar diretorio de producao
 if not exist "%PROD_DIR%" (
     mkdir "%PROD_DIR%"
     echo [OK] Diretorio criado
@@ -28,7 +27,7 @@ if not exist "%PROD_DIR%" (
     echo [INFO] Diretorio ja existe
 )
 
-REM Criar subdiretórios
+REM Criar subdiretorios
 mkdir "%PROD_DIR%\logs" 2>nul
 mkdir "%PROD_DIR%\server" 2>nul
 mkdir "%PROD_DIR%\scripts" 2>nul
@@ -49,10 +48,9 @@ echo [OK] Arquivos necessarios encontrados
 echo.
 echo [INFO] Copiando arquivos...
 
-REM Copiar servidores
-copy "server-producao-unificado.js" "%PROD_DIR%\server-backend.js" >nul
-copy "server-producao-com-proxy.js" "%PROD_DIR%\server-proxy.js" >nul
-copy "package-proxy.json" "%PROD_DIR%\package.json" >nul
+REM Copiar servidor único
+copy "server-producao.js" "%PROD_DIR%\server-producao.js" >nul
+copy "package-producao.json" "%PROD_DIR%\package.json" >nul
 echo [OK] Servidores copiados
 
 REM Copiar estrutura
@@ -86,21 +84,13 @@ echo CORS_ORIGIN=http://localhost:3000
 echo LOG_LEVEL=info
 ) > "%PROD_DIR%\.env"
 
-REM Criar scripts de inicialização
+REM Criar scripts de inicializacao
 (
 echo @echo off
 echo cd /d "%PROD_DIR%"
-echo set PORT=3001
-echo node server-backend.js
-) > "%PROD_DIR%\start-backend.bat"
-
-(
-echo @echo off
-echo cd /d "%PROD_DIR%"
-echo set FRONTEND_PORT=3000
-echo set BACKEND_PORT=3001
-echo node server-proxy.js
-) > "%PROD_DIR%\start-proxy.bat"
+echo set PORT=3000
+echo node server-producao.js
+) > "%PROD_DIR%\start-aplicacao.bat"
 
 echo [OK] Configuracoes criadas
 
@@ -138,7 +128,6 @@ echo 2. configurar-servico.bat    (criar servicos Windows)
 echo 3. Acessar: http://localhost:3000
 echo.
 echo PARA TESTAR MANUALMENTE:
-echo   Terminal 1: %PROD_DIR%\start-backend.bat
-echo   Terminal 2: %PROD_DIR%\start-proxy.bat
+echo   Execute: %PROD_DIR%\start-aplicacao.bat
 echo.
 pause

@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 >nul
 echo ======================================================
 echo CONFIGURAR SERVICOS WINDOWS - GYM PULSE SYSTEM
 echo ======================================================

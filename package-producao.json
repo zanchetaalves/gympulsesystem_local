@@ -1,36 +1,36 @@
 {
     "name": "gym-pulse-production",
     "version": "1.0.0",
-    "description": "Sistema Gym Pulse - Servidor de Produção Unificado",
+    "description": "Gym Pulse System - Production Server",
     "type": "module",
     "main": "server-producao.js",
     "scripts": {
         "start": "node server-producao.js",
-        "start:dev": "NODE_ENV=development node server-producao.js",
-        "build": "echo 'Build do frontend deve ser executado no projeto principal'",
         "setup:db": "node scripts/setup-database.js",
-        "test": "curl http://localhost:3000/api/health"
+        "setup:auth": "node scripts/setup-auth.js",
+        "setup:plan-types": "node scripts/setup-plan-types.js",
+        "update:payments": "node scripts/update-payments-table.js",
+        "setup:appointments": "node scripts/setup-appointments.js",
+        "migrate:clients": "node scripts/migrate-client-table.js",
+        "update:plans": "node scripts/update-plans.js",
+        "clean:plans": "node scripts/clean-plans.js"
     },
     "dependencies": {
-        "express": "^4.18.2",
+        "express": "^5.1.0",
         "cors": "^2.8.5",
-        "pg": "^8.11.3",
-        "dotenv": "^16.3.1",
-        "cookie-parser": "^1.4.6",
-        "bcryptjs": "^2.4.3",
-        "jsonwebtoken": "^9.0.2"
-    },
-    "engines": {
-        "node": ">=18.0.0"
+        "pg": "^8.16.3",
+        "dotenv": "^17.2.1",
+        "cookie-parser": "^1.4.7",
+        "bcryptjs": "^3.0.2",
+        "jsonwebtoken": "^9.0.2",
+        "uuid": "^11.1.0"
     },
     "keywords": [
         "gym",
         "management",
-        "react",
-        "express",
-        "postgresql"
+        "system",
+        "production"
     ],
     "author": "Gym Pulse Team",
     "license": "MIT"
 }
-
