@@ -1,0 +1,28 @@
+{
+    "name": "gym-pulse-production",
+    "version": "1.0.0",
+    "description": "Gym Pulse System - Production Server",
+    "type": "module",
+    "main": "server-producao-unificado.js",
+    "scripts": {
+        "start": "node server-producao-unificado.js",
+        "setup:db": "node scripts/setup-database.js"
+    },
+    "dependencies": {
+        "express": "^5.1.0",
+        "cors": "^2.8.5",
+        "pg": "^8.16.3",
+        "dotenv": "^17.2.1",
+        "cookie-parser": "^1.4.7",
+        "bcryptjs": "^3.0.2",
+        "jsonwebtoken": "^9.0.2"
+    },
+    "keywords": [
+        "gym",
+        "management",
+        "system",
+        "production"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+}
