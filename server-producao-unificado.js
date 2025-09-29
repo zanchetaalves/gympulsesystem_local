@@ -324,14 +324,25 @@ const setupAPIRoutes = () => {
     // Serve static files from dist folder
     app.use(express.static(path.join(__dirname, 'dist')));
 
-    // Handle React Router - all non-API routes should return index.html
-    app.get('*', (req, res) => {
-        // Don't serve index.html for API routes
+    // Handle React Router - catch all non-API routes
+    app.use('/', (req, res, next) => {
+        // Skip if it's an API route
         if (req.path.startsWith('/api/')) {
-            return res.status(404).json({ error: 'API endpoint not found' });
+            return next();
         }
 
+        // Skip if it's a static file (has extension)
+        if (req.path.includes('.')) {
+            return next();
+        }
+
+        // For all other routes, serve the React app
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    });
+
+    // 404 handler for API routes
+    app.use('/api/', (req, res) => {
+        res.status(404).json({ error: 'API endpoint not found' });
     });
 };
 

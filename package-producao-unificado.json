@@ -6,7 +6,14 @@
     "main": "server-producao-unificado.js",
     "scripts": {
         "start": "node server-producao-unificado.js",
-        "setup:db": "node scripts/setup-database.js"
+        "setup:db": "node scripts/setup-database.js",
+        "setup:auth": "node scripts/setup-auth.js",
+        "setup:plan-types": "node scripts/setup-plan-types.js",
+        "update:payments": "node scripts/update-payments-table.js",
+        "setup:appointments": "node scripts/setup-appointments.js",
+        "migrate:clients": "node scripts/migrate-client-table.js",
+        "update:plans": "node scripts/update-plans.js",
+        "clean:plans": "node scripts/clean-plans.js"
     },
     "dependencies": {
         "express": "^5.1.0",
@@ -15,7 +22,8 @@
         "dotenv": "^17.2.1",
         "cookie-parser": "^1.4.7",
         "bcryptjs": "^3.0.2",
-        "jsonwebtoken": "^9.0.2"
+        "jsonwebtoken": "^9.0.2",
+        "uuid": "^11.1.0"
     },
     "keywords": [
         "gym",

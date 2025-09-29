@@ -1,29 +1,31 @@
 @echo off
+chcp 65001 >nul
 echo ======================================================
-echo 🚀 SETUP PRODUÇÃO - GYM PULSE SYSTEM
+echo SETUP PRODUCAO - GYM PULSE SYSTEM
 echo ======================================================
 
 REM Verificar se está executando como administrador
 net session >nul 2>&1
 if %errorLevel% == 0 (
-    echo ✅ Executando como Administrador
+    echo [OK] Executando como Administrador
 ) else (
-    echo ❌ ERRO: Execute como Administrador!
-    echo Clique com o botão direito e "Executar como administrador"
+    echo [ERRO] Execute como Administrador!
+    echo Clique com o botao direito e "Executar como administrador"
     pause
     exit /b 1
 )
 
+set PROD_DIR=C:\gym-pulse-production
+
 echo.
-echo 📂 Criando estrutura de produção...
+echo [INFO] Criando estrutura de producao em %PROD_DIR%...
 
 REM Criar diretório de produção
-set PROD_DIR=C:\gym-pulse-production
 if not exist "%PROD_DIR%" (
     mkdir "%PROD_DIR%"
-    echo ✅ Diretório criado: %PROD_DIR%
+    echo [OK] Diretorio criado
 ) else (
-    echo ℹ️ Diretório já existe: %PROD_DIR%
+    echo [INFO] Diretorio ja existe
 )
 
 REM Criar subdiretórios
@@ -32,88 +34,111 @@ mkdir "%PROD_DIR%\server" 2>nul
 mkdir "%PROD_DIR%\scripts" 2>nul
 
 echo.
-echo 📋 Copiando arquivos da aplicação...
+echo [INFO] Verificando arquivos necessarios...
 
-REM Copiar servidor unificado
-copy "server-producao-unificado.js" "%PROD_DIR%\server-producao-unificado.js" >nul
-echo ✅ Servidor unificado copiado
+REM Verificar se pasta dist existe
+if not exist "dist" (
+    echo [ERRO] Pasta 'dist' nao encontrada!
+    echo Execute 'npm run build' primeiro
+    pause
+    exit /b 1
+)
 
-REM Copiar package.json de produção
-copy "package-producao-unificado.json" "%PROD_DIR%\package.json" >nul
-echo ✅ package.json copiado
+echo [OK] Arquivos necessarios encontrados
 
-REM Copiar pasta dist
+echo.
+echo [INFO] Copiando arquivos...
+
+REM Copiar servidores
+copy "server-producao-unificado.js" "%PROD_DIR%\server-backend.js" >nul
+copy "server-producao-com-proxy.js" "%PROD_DIR%\server-proxy.js" >nul
+copy "package-proxy.json" "%PROD_DIR%\package.json" >nul
+echo [OK] Servidores copiados
+
+REM Copiar estrutura
 xcopy "dist" "%PROD_DIR%\dist" /E /I /H /Y >nul
-echo ✅ Frontend (dist) copiado
-
-REM Copiar pasta server
 xcopy "server" "%PROD_DIR%\server" /E /I /H /Y >nul
-echo ✅ Módulos do servidor copiados
-
-REM Copiar pasta scripts
 xcopy "scripts" "%PROD_DIR%\scripts" /E /I /H /Y >nul
-echo ✅ Scripts do banco copiados
+echo [OK] Estrutura copiada
+
+REM Copiar database-setup.sql se existir
+if exist "database-setup.sql" (
+    copy "database-setup.sql" "%PROD_DIR%\database-setup.sql" >nul
+    echo [OK] Script de banco copiado
+)
 
 echo.
-echo 🔧 Criando arquivo .env de produção...
+echo [INFO] Criando configuracoes...
 
-REM Criar arquivo .env
+REM Criar arquivo .env para backend
 (
-echo # Configurações de Produção - Gym Pulse System
+echo # Backend - Porta 3001
 echo NODE_ENV=production
-echo PORT=3000
-echo.
-echo # Database Configuration
+echo PORT=3001
 echo DB_HOST=localhost
 echo DB_PORT=5432
 echo DB_NAME=GYMPULSE_BD
 echo DB_USER=postgres
 echo DB_PASSWORD=postgres
-echo.
-echo # JWT Configuration
 echo JWT_SECRET=gym-pulse-super-secret-key-production-2024
 echo JWT_EXPIRES_IN=24h
-echo.
-echo # Application Configuration
 echo CORS_ORIGIN=http://localhost:3000
 echo LOG_LEVEL=info
 ) > "%PROD_DIR%\.env"
 
-echo ✅ Arquivo .env criado
+REM Criar scripts de inicialização
+(
+echo @echo off
+echo cd /d "%PROD_DIR%"
+echo set PORT=3001
+echo node server-backend.js
+) > "%PROD_DIR%\start-backend.bat"
+
+(
+echo @echo off
+echo cd /d "%PROD_DIR%"
+echo set FRONTEND_PORT=3000
+echo set BACKEND_PORT=3001
+echo node server-proxy.js
+) > "%PROD_DIR%\start-proxy.bat"
+
+echo [OK] Configuracoes criadas
 
 echo.
-echo 📦 Instalando dependências Node.js...
+echo [INFO] Instalando dependencias...
 cd /d "%PROD_DIR%"
 call npm install
 
 if %errorlevel% neq 0 (
-    echo ❌ Erro ao instalar dependências
+    echo [ERRO] Erro ao instalar dependencias
     pause
     exit /b 1
 )
 
-echo ✅ Dependências instaladas com sucesso
+echo [OK] Dependencias instaladas
 
 echo.
-echo 🗄️ Configurando banco de dados...
+echo [INFO] Configurando banco de dados...
 call npm run setup:db
 
 if %errorlevel% neq 0 (
-    echo ⚠️ Aviso: Erro ao configurar banco de dados
-    echo Verifique se o PostgreSQL está rodando e o banco GYMPULSE_BD existe
-    echo Você pode configurar manualmente depois
+    echo [AVISO] Erro ao configurar banco - configure manualmente depois
 )
 
 echo.
-echo ✅ ======================================================
-echo 🎉 SETUP CONCLUÍDO COM SUCESSO!
+echo ======================================================
+echo [SUCESSO] SETUP CONCLUIDO!
 echo ======================================================
 echo.
-echo 📂 Arquivos estão em: %PROD_DIR%
-echo 🌐 Para testar: cd %PROD_DIR% && npm start
+echo Estrutura criada em: %PROD_DIR%
 echo.
-echo Próximos passos:
-echo 1. Configure o serviço Windows (próximo script)
-echo 2. Teste a aplicação
+echo PROXIMOS PASSOS:
+echo 1. configurar-proxy.bat      (configurar proxy)
+echo 2. configurar-servico.bat    (criar servicos Windows)
+echo 3. Acessar: http://localhost:3000
+echo.
+echo PARA TESTAR MANUALMENTE:
+echo   Terminal 1: %PROD_DIR%\start-backend.bat
+echo   Terminal 2: %PROD_DIR%\start-proxy.bat
 echo.
 pause
