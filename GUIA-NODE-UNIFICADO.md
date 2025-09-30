@@ -319,3 +319,4 @@ type C:\gym-pulse-production\logs\production.log
 **💡 PRÓXIMO PASSO:** Execute `.\migrar-para-node-unificado.bat` no servidor!
 
 
+

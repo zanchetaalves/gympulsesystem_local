@@ -40,13 +40,7 @@ const Plans = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Garantir que componente está montado antes de mostrar dialogs
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
+  // Removido isMounted - simplificando lógica
 
   const {
     plans,
@@ -59,13 +53,8 @@ const Plans = () => {
   const handleCreatePlan = async (data: any) => {
     try {
       await createPlan.mutateAsync(data);
-      // Fechar dialog com controle defensivo para produção
-      if (isMounted) {
-        requestAnimationFrame(() => {
-          setCreateDialogOpen(false);
-          setSelectedPlan(null);
-        });
-      }
+      setCreateDialogOpen(false);
+      setSelectedPlan(null);
     } catch (error) {
       console.error('Erro ao criar plano:', error);
     }
@@ -79,13 +68,8 @@ const Plans = () => {
         ...data,
         id: selectedPlan.id // Ensure the plan ID is included for the update
       });
-      // Fechar dialog com controle defensivo para produção
-      if (isMounted) {
-        requestAnimationFrame(() => {
-          setEditDialogOpen(false);
-          setSelectedPlan(null);
-        });
-      }
+      setEditDialogOpen(false);
+      setSelectedPlan(null);
     } catch (error) {
       // Deixa o dialog aberto em caso de erro
       console.error('Erro ao editar plano:', error);
@@ -93,16 +77,11 @@ const Plans = () => {
   };
 
   const handleDeletePlan = async () => {
-    if (!selectedPlan || !isMounted) return;
+    if (!selectedPlan) return;
     deletePlan.mutate(selectedPlan.id, {
       onSuccess: () => {
-        // Fechar dialog com controle defensivo para produção
-        if (isMounted) {
-          requestAnimationFrame(() => {
-            setDeleteDialogOpen(false);
-            setSelectedPlan(null);
-          });
-        }
+        setDeleteDialogOpen(false);
+        setSelectedPlan(null);
       },
       onError: () => {
         // Mantém o dialog aberto em caso de erro
@@ -111,36 +90,24 @@ const Plans = () => {
   };
 
   const openDeleteDialog = (plan: Plan) => {
-    if (!isMounted) return;
-    // Fechar outros dialogs antes de abrir o de exclusão
-    requestAnimationFrame(() => {
-      setEditDialogOpen(false);
-      setCreateDialogOpen(false);
-      setSelectedPlan(plan);
-      setDeleteDialogOpen(true);
-    });
+    setEditDialogOpen(false);
+    setCreateDialogOpen(false);
+    setSelectedPlan(plan);
+    setDeleteDialogOpen(true);
   };
 
   const openEditDialog = (plan: Plan) => {
-    if (!isMounted) return;
-    // Fechar outros dialogs antes de abrir o de edição
-    requestAnimationFrame(() => {
-      setCreateDialogOpen(false);
-      setDeleteDialogOpen(false);
-      setSelectedPlan(plan);
-      setEditDialogOpen(true);
-    });
+    setCreateDialogOpen(false);
+    setDeleteDialogOpen(false);
+    setSelectedPlan(plan);
+    setEditDialogOpen(true);
   };
 
   const openCreateDialog = () => {
-    if (!isMounted) return;
-    // Fechar outros dialogs antes de abrir o de criação
-    requestAnimationFrame(() => {
-      setEditDialogOpen(false);
-      setDeleteDialogOpen(false);
-      setSelectedPlan(null);
-      setCreateDialogOpen(true);
-    });
+    setEditDialogOpen(false);
+    setDeleteDialogOpen(false);
+    setSelectedPlan(null);
+    setCreateDialogOpen(true);
   };
 
   return (
@@ -153,38 +120,24 @@ const Plans = () => {
         </Button>
       </div>
 
-      {/* Dialog de Criar Plano - Renderizar apenas quando montado */}
-      {isMounted && (
-        <Dialog
-          open={createDialogOpen}
-          onOpenChange={(open) => {
-            if (!open && isMounted) {
-              // Fechar com requestAnimationFrame para evitar problemas de DOM
-              requestAnimationFrame(() => {
-                if (isMounted) {
-                  setCreateDialogOpen(false);
-                  setSelectedPlan(null);
-                }
-              });
-            } else if (open && isMounted) {
-              setCreateDialogOpen(open);
-            }
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Cadastrar Novo Plano</DialogTitle>
-              <DialogDescription>
-                Preencha as informações abaixo para criar um novo plano.
-              </DialogDescription>
-            </DialogHeader>
-            <PlanForm
-              onSubmit={handleCreatePlan}
-              isLoading={createPlan.isPending}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Dialog de Criar Plano */}
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Plano</DialogTitle>
+            <DialogDescription>
+              Preencha as informações abaixo para criar um novo plano.
+            </DialogDescription>
+          </DialogHeader>
+          <PlanForm
+            onSubmit={handleCreatePlan}
+            isLoading={createPlan.isPending}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -258,22 +211,11 @@ const Plans = () => {
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog - Renderizar apenas quando montado */}
-      {isMounted && selectedPlan && (
+      {/* Delete Confirmation Dialog */}
+      {selectedPlan && (
         <AlertDialog
           open={deleteDialogOpen}
-          onOpenChange={(open) => {
-            if (!open && isMounted) {
-              requestAnimationFrame(() => {
-                if (isMounted) {
-                  setDeleteDialogOpen(false);
-                  setSelectedPlan(null);
-                }
-              });
-            } else if (open && isMounted) {
-              setDeleteDialogOpen(open);
-            }
-          }}
+          onOpenChange={setDeleteDialogOpen}
         >
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -297,23 +239,11 @@ const Plans = () => {
         </AlertDialog>
       )}
 
-      {/* Dialog de Editar Plano - Renderizar apenas quando montado */}
-      {isMounted && selectedPlan && (
+      {/* Dialog de Editar Plano */}
+      {selectedPlan && (
         <Dialog
           open={editDialogOpen}
-          onOpenChange={(open) => {
-            if (!open && isMounted) {
-              // Fechar com requestAnimationFrame para evitar problemas de DOM
-              requestAnimationFrame(() => {
-                if (isMounted) {
-                  setEditDialogOpen(false);
-                  setSelectedPlan(null);
-                }
-              });
-            } else if (open && isMounted) {
-              setEditDialogOpen(open);
-            }
-          }}
+          onOpenChange={setEditDialogOpen}
         >
           <DialogContent>
             <DialogHeader>

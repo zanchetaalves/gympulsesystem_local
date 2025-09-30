@@ -310,6 +310,9 @@ const Appointments = () => {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Detalhes do Compromisso</DialogTitle>
+                        <DialogDescription>
+                            Visualize as informações completas do compromisso selecionado.
+                        </DialogDescription>
                     </DialogHeader>
                     {selectedAppointment && (
                         <div className="space-y-4">
