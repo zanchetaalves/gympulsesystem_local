@@ -90,12 +90,21 @@ const setupAPIRoutes = () => {
 
     app.post('/api/plans', authenticateToken, async (req, res) => {
         try {
-            const { name, description, price, duration_days, plan_type_id, features } = req.body;
+            const { name, type, price_brl, description, duration_months, active = true, plan_type_id } = req.body;
+
+            // Validações
+            if (!name || !type || !price_brl || !duration_months) {
+                return res.status(400).json({
+                    error: 'Name, type, price_brl and duration_months are required'
+                });
+            }
+
             const result = await client.query(
-                'INSERT INTO plans (name, description, price, duration_days, plan_type_id, features) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-                [name, description, price, duration_days, plan_type_id, features]
+                'INSERT INTO plans (name, type, price_brl, description, duration_months, active, plan_type_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                [name, type, price_brl, description, duration_months, active, plan_type_id]
             );
-            res.json(result.rows[0]);
+
+            res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating plan:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -105,11 +114,17 @@ const setupAPIRoutes = () => {
     app.put('/api/plans/:id', authenticateToken, async (req, res) => {
         try {
             const { id } = req.params;
-            const { name, description, price, duration_days, plan_type_id, features } = req.body;
+            const { name, type, price_brl, description, duration_months, active, plan_type_id } = req.body;
+
             const result = await client.query(
-                'UPDATE plans SET name = $1, description = $2, price = $3, duration_days = $4, plan_type_id = $5, features = $6 WHERE id = $7 RETURNING *',
-                [name, description, price, duration_days, plan_type_id, features, id]
+                'UPDATE plans SET name = $1, type = $2, price_brl = $3, description = $4, duration_months = $5, active = $6, plan_type_id = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $8 RETURNING *',
+                [name, type, price_brl, description, duration_months, active, plan_type_id, id]
             );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Plan not found' });
+            }
+
             res.json(result.rows[0]);
         } catch (error) {
             console.error('Error updating plan:', error);
@@ -203,12 +218,21 @@ const setupAPIRoutes = () => {
 
     app.post('/api/clients', authenticateToken, async (req, res) => {
         try {
-            const { name, email, phone, address, birthdate, photo } = req.body;
+            const { name, cpf, email, phone, address, birth_date, photo_url } = req.body;
+
+            // Validações
+            if (!name || !phone || !birth_date) {
+                return res.status(400).json({
+                    error: 'Name, phone and birth_date are required'
+                });
+            }
+
             const result = await client.query(
-                'INSERT INTO clients (name, email, phone, address, birthdate, photo) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-                [name, email, phone, address, birthdate, photo]
+                'INSERT INTO clients (name, cpf, email, phone, address, birth_date, photo_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                [name, cpf, email, phone, address, birth_date, photo_url]
             );
-            res.json(result.rows[0]);
+
+            res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating client:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -218,11 +242,17 @@ const setupAPIRoutes = () => {
     app.put('/api/clients/:id', authenticateToken, async (req, res) => {
         try {
             const { id } = req.params;
-            const { name, email, phone, address, birthdate, photo } = req.body;
+            const { name, cpf, email, phone, address, birth_date, photo_url } = req.body;
+
             const result = await client.query(
-                'UPDATE clients SET name = $1, email = $2, phone = $3, address = $4, birthdate = $5, photo = $6 WHERE id = $7 RETURNING *',
-                [name, email, phone, address, birthdate, photo, id]
+                'UPDATE clients SET name = $1, cpf = $2, email = $3, phone = $4, address = $5, birth_date = $6, photo_url = $7 WHERE id = $8 RETURNING *',
+                [name, cpf, email, phone, address, birth_date, photo_url, id]
             );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Client not found' });
+            }
+
             res.json(result.rows[0]);
         } catch (error) {
             console.error('Error updating client:', error);
@@ -246,7 +276,13 @@ const setupAPIRoutes = () => {
         try {
             const { client_id } = req.query;
             let query = `
-                SELECT p.*, c.name as client_name, pl.name as plan_name, s.id as subscription_id
+                SELECT 
+                    p.*,
+                    COALESCE(c.name, 'Cliente não encontrado') as client_name,
+                    COALESCE(pl.name, 'Plano não encontrado') as plan_name,
+                    s.id as subscription_id,
+                    s.plan as subscription_plan,
+                    c.id as client_id_real
                 FROM payments p 
                 LEFT JOIN subscriptions s ON p.subscription_id = s.id
                 LEFT JOIN clients c ON s.client_id = c.id 
@@ -259,9 +295,17 @@ const setupAPIRoutes = () => {
                 params = [client_id];
             }
 
-            query += ' ORDER BY p.created_at DESC';
+            query += ' ORDER BY p.payment_date DESC, p.created_at DESC';
 
             const result = await client.query(query, params);
+
+            // Debug: Log para identificar problemas
+            console.log(`[DEBUG] Payments query returned ${result.rows.length} rows`);
+            if (result.rows.length > 0) {
+                const firstRow = result.rows[0];
+                console.log(`[DEBUG] First payment: subscription_id=${firstRow.subscription_id}, client_name=${firstRow.client_name}`);
+            }
+
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching payments:', error);
@@ -271,12 +315,21 @@ const setupAPIRoutes = () => {
 
     app.post('/api/payments', authenticateToken, async (req, res) => {
         try {
-            const { subscription_id, amount, payment_method, notes } = req.body;
+            const { subscription_id, payment_date, amount, payment_method, status = 'paid' } = req.body;
+
+            // Validações
+            if (!subscription_id || !payment_date || !amount || !payment_method) {
+                return res.status(400).json({
+                    error: 'subscription_id, payment_date, amount and payment_method are required'
+                });
+            }
+
             const result = await client.query(
-                'INSERT INTO payments (subscription_id, amount, payment_method, notes) VALUES ($1, $2, $3, $4) RETURNING *',
-                [subscription_id, amount, payment_method, notes]
+                'INSERT INTO payments (subscription_id, payment_date, amount, payment_method, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [subscription_id, payment_date, amount, payment_method, status]
             );
-            res.json(result.rows[0]);
+
+            res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating payment:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -302,12 +355,21 @@ const setupAPIRoutes = () => {
 
     app.post('/api/subscriptions', authenticateToken, async (req, res) => {
         try {
-            const { cliente_id, plan_id, start_date, end_date, status } = req.body;
+            const { client_id, plan_id, plan, start_date, end_date, active = true, locked = false, lock_days } = req.body;
+
+            // Validações
+            if (!client_id || !plan_id || !plan || !start_date || !end_date) {
+                return res.status(400).json({
+                    error: 'client_id, plan_id, plan, start_date and end_date are required'
+                });
+            }
+
             const result = await client.query(
-                'INSERT INTO subscriptions (cliente_id, plan_id, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [cliente_id, plan_id, start_date, end_date, status]
+                'INSERT INTO subscriptions (client_id, plan_id, plan, start_date, end_date, active, locked, lock_days) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                [client_id, plan_id, plan, start_date, end_date, active, locked, lock_days]
             );
-            res.json(result.rows[0]);
+
+            res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating subscription:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -349,14 +411,244 @@ const setupAPIRoutes = () => {
 
     app.post('/api/appointments', authenticateToken, async (req, res) => {
         try {
-            const { client_id, appointment_date, service_type, notes } = req.body;
+            const {
+                title,
+                description,
+                appointment_date,
+                appointment_time,
+                duration_minutes = 60,
+                client_id,
+                user_id,
+                status = 'scheduled',
+                reminder_sent = false
+            } = req.body;
+
+            // Validações
+            if (!title || !appointment_date || !appointment_time || !user_id) {
+                return res.status(400).json({
+                    error: 'title, appointment_date, appointment_time and user_id are required'
+                });
+            }
+
             const result = await client.query(
-                'INSERT INTO appointments (client_id, appointment_date, service_type, notes) VALUES ($1, $2, $3, $4) RETURNING *',
-                [client_id, appointment_date, service_type, notes]
+                'INSERT INTO appointments (title, description, appointment_date, appointment_time, duration_minutes, client_id, user_id, status, reminder_sent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+                [title, description, appointment_date, appointment_time, duration_minutes, client_id, user_id, status, reminder_sent]
             );
-            res.json(result.rows[0]);
+
+            res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating appointment:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    // PUT e DELETE para subscriptions
+    app.put('/api/subscriptions/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { client_id, plan_id, plan, start_date, end_date, active, locked, lock_days } = req.body;
+
+            const result = await client.query(
+                'UPDATE subscriptions SET client_id = $1, plan_id = $2, plan = $3, start_date = $4, end_date = $5, active = $6, locked = $7, lock_days = $8 WHERE id = $9 RETURNING *',
+                [client_id, plan_id, plan, start_date, end_date, active, locked, lock_days, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Subscription not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error updating subscription:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.delete('/api/subscriptions/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await client.query('DELETE FROM subscriptions WHERE id = $1 RETURNING *', [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Subscription not found' });
+            }
+
+            res.json({ message: 'Subscription deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting subscription:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    // PUT e DELETE para payments
+    app.put('/api/payments/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { subscription_id, payment_date, amount, payment_method, status } = req.body;
+
+            const result = await client.query(
+                'UPDATE payments SET subscription_id = $1, payment_date = $2, amount = $3, payment_method = $4, status = $5 WHERE id = $6 RETURNING *',
+                [subscription_id, payment_date, amount, payment_method, status, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Payment not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error updating payment:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.delete('/api/payments/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await client.query('DELETE FROM payments WHERE id = $1 RETURNING *', [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Payment not found' });
+            }
+
+            res.json({ message: 'Payment deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting payment:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    // PUT e DELETE para appointments
+    app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { title, description, appointment_date, appointment_time, duration_minutes, client_id, user_id, status, reminder_sent } = req.body;
+
+            const result = await client.query(
+                'UPDATE appointments SET title = $1, description = $2, appointment_date = $3, appointment_time = $4, duration_minutes = $5, client_id = $6, user_id = $7, status = $8, reminder_sent = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10 RETURNING *',
+                [title, description, appointment_date, appointment_time, duration_minutes, client_id, user_id, status, reminder_sent, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Appointment not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error updating appointment:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await client.query('DELETE FROM appointments WHERE id = $1 RETURNING *', [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Appointment not found' });
+            }
+
+            res.json({ message: 'Appointment deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting appointment:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    // Plan Types routes
+    app.get('/api/plan_types', async (req, res) => {
+        try {
+            const { orderBy = 'name', ascending = 'true' } = req.query;
+            const order = ascending === 'true' ? 'ASC' : 'DESC';
+
+            // Validar campo de ordenação
+            const validOrderFields = ['name', 'created_at', 'updated_at'];
+            const orderField = validOrderFields.includes(orderBy) ? orderBy : 'name';
+
+            const result = await client.query(
+                `SELECT * FROM plan_types ORDER BY ${orderField} ${order}`
+            );
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching plan types:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.get('/api/plan_types/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await client.query('SELECT * FROM plan_types WHERE id = $1', [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Plan type not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error fetching plan type:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.post('/api/plan_types', authenticateToken, async (req, res) => {
+        try {
+            const { name, description, active = true } = req.body;
+
+            // Validações
+            if (!name) {
+                return res.status(400).json({
+                    error: 'Name is required'
+                });
+            }
+
+            const result = await client.query(
+                'INSERT INTO plan_types (name, description, active) VALUES ($1, $2, $3) RETURNING *',
+                [name, description, active]
+            );
+
+            res.status(201).json(result.rows[0]);
+        } catch (error) {
+            console.error('Error creating plan type:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.put('/api/plan_types/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name, description, active } = req.body;
+
+            const result = await client.query(
+                'UPDATE plan_types SET name = $1, description = $2, active = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
+                [name, description, active, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Plan type not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error updating plan type:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    });
+
+    app.delete('/api/plan_types/:id', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await client.query('DELETE FROM plan_types WHERE id = $1 RETURNING *', [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Plan type not found' });
+            }
+
+            res.json({ message: 'Plan type deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting plan type:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
     });

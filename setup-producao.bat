@@ -89,6 +89,10 @@ REM Criar scripts de inicializacao
 echo @echo off
 echo cd /d "%PROD_DIR%"
 echo set PORT=3000
+echo set NODE_ENV=production
+echo echo [INFO] Iniciando Gym Pulse System...
+echo echo [INFO] Diretorio: %%CD%%
+echo echo [INFO] Porta: %%PORT%%
 echo node server-producao.js
 ) > "%PROD_DIR%\start-aplicacao.bat"
 

@@ -62,7 +62,7 @@ export const usePlanTypes = () => {
         queryFn: async () => {
             try {
                 const result = await apiCall('/plan_types?orderBy=name&ascending=true');
-                return (result.data || []).map(dbToAppPlanType);
+                return (result || []).map(dbToAppPlanType);
             } catch (error) {
                 console.error('Error fetching plan types:', error);
                 toast({
@@ -83,7 +83,7 @@ export const usePlanTypes = () => {
                 method: 'POST',
                 body: JSON.stringify(dbData),
             });
-            return dbToAppPlanType(result.data);
+            return dbToAppPlanType(result);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plan-types'] });
@@ -110,7 +110,7 @@ export const usePlanTypes = () => {
                 method: 'PUT',
                 body: JSON.stringify(dbData),
             });
-            return dbToAppPlanType(result.data);
+            return dbToAppPlanType(result);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plan-types'] });
@@ -134,7 +134,7 @@ export const usePlanTypes = () => {
             const result = await apiCall(`/plan_types/${id}`, {
                 method: 'DELETE',
             });
-            return result.data;
+            return result;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plan-types'] });

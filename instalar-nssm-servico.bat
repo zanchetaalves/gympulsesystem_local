@@ -1,6 +1,6 @@
 @echo off
 echo ======================================================
-echo CONFIGURAR SERVICOS WINDOWS - GYM PULSE SYSTEM
+echo INSTALAR SERVICO COM NSSM - GYM PULSE SYSTEM
 echo ======================================================
 
 REM Verificar se está executando como administrador
@@ -15,6 +15,7 @@ if %errorLevel% == 0 (
 
 set PROD_DIR=C:\gym-pulse-production
 set SERVICE_NAME=GymPulseSystem
+set NSSM_DIR=C:\nssm-2.24\win64
 
 REM Verificar se estrutura existe
 if not exist "%PROD_DIR%" (
@@ -24,23 +25,19 @@ if not exist "%PROD_DIR%" (
     exit /b 1
 )
 
-REM Verificar se Node.js está disponível
-node --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERRO] Node.js nao encontrado no PATH!
-    echo Instale o Node.js ou adicione ao PATH do sistema
-    pause
-    exit /b 1
+echo.
+echo [INFO] Baixando NSSM...
+
+REM Baixar NSSM se não existir
+if not exist "%NSSM_DIR%\nssm.exe" (
+    powershell -Command "Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile 'C:\nssm.zip'"
+    powershell -Command "Expand-Archive -Path 'C:\nssm.zip' -DestinationPath 'C:\' -Force"
+    echo [OK] NSSM baixado e extraido
+) else (
+    echo [OK] NSSM ja existe
 )
 
-echo [OK] Node.js encontrado: 
-node --version
-
 echo.
-echo [INFO] Configurando servico Windows unico:
-echo   %SERVICE_NAME% (porta 3000) - Aplicacao completa
-echo.
-
 echo [INFO] Removendo servicos existentes...
 sc stop "GymPulseBackend" >nul 2>&1
 sc stop "GymPulseProxy" >nul 2>&1
@@ -55,28 +52,27 @@ timeout /t 3 /nobreak >nul
 echo [OK] Servicos antigos removidos
 
 echo.
-echo [INFO] Criando servico unico...
-
-sc create "%SERVICE_NAME%" ^
-binPath= "\"%PROD_DIR%\start-aplicacao.bat\"" ^
-start= auto ^
-DisplayName= "Gym Pulse System" ^
-obj= "LocalSystem" >nul 2>&1
-
-if %errorlevel% == 0 (
-    echo [OK] Servico criado com sucesso
-) else (
-    echo [AVISO] Erro ao criar servico
-)
+echo [INFO] Criando pasta de logs...
+if not exist "%PROD_DIR%\logs" mkdir "%PROD_DIR%\logs"
 
 echo.
-echo [INFO] Configurando inicializacao automatica...
-sc config "%SERVICE_NAME%" start= auto >nul 2>&1
+echo [INFO] Instalando servico com NSSM...
+"%NSSM_DIR%\nssm.exe" install %SERVICE_NAME% node.exe server-producao.js
 
+echo [INFO] Configurando servico...
+"%NSSM_DIR%\nssm.exe" set %SERVICE_NAME% AppDirectory "%PROD_DIR%"
+"%NSSM_DIR%\nssm.exe" set %SERVICE_NAME% AppEnvironmentExtra PORT=3000 NODE_ENV=production
+"%NSSM_DIR%\nssm.exe" set %SERVICE_NAME% AppStdout "%PROD_DIR%\logs\stdout.log"
+"%NSSM_DIR%\nssm.exe" set %SERVICE_NAME% AppStderr "%PROD_DIR%\logs\stderr.log"
+"%NSSM_DIR%\nssm.exe" set %SERVICE_NAME% DisplayName "Gym Pulse System"
+"%NSSM_DIR%\nssm.exe" set %SERVICE_NAME% Description "Sistema de gerenciamento de academia - Gym Pulse"
+
+echo [OK] Servico configurado
 
 echo.
 echo [INFO] Iniciando servico...
-sc start "%SERVICE_NAME%" >nul 2>&1
+"%NSSM_DIR%\nssm.exe" start %SERVICE_NAME%
+
 if %errorlevel% == 0 (
     echo [OK] Servico iniciado com sucesso
 ) else (
@@ -101,26 +97,25 @@ powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:
 
 echo.
 echo ======================================================
-echo [SUCESSO] SERVICO CONFIGURADO!
+echo [SUCESSO] SERVICO INSTALADO COM NSSM!
 echo ======================================================
 echo.
 echo SERVICO CRIADO:
 echo   %SERVICE_NAME% (porta 3000) - Aplicacao completa
 echo.
 echo COMANDOS UTEIS:
-echo   sc start %SERVICE_NAME%     - Iniciar servico
-echo   sc stop %SERVICE_NAME%      - Parar servico
-echo   sc query %SERVICE_NAME%     - Status do servico
-echo   sc restart %SERVICE_NAME%   - Reiniciar servico
+echo   nssm start %SERVICE_NAME%     - Iniciar servico
+echo   nssm stop %SERVICE_NAME%      - Parar servico
+echo   nssm status %SERVICE_NAME%    - Status do servico
+echo   nssm restart %SERVICE_NAME%   - Reiniciar servico
+echo   nssm edit %SERVICE_NAME%      - Editar configuracoes
+echo.
+echo LOGS DO SERVICO:
+echo   Stdout: %PROD_DIR%\logs\stdout.log
+echo   Stderr: %PROD_DIR%\logs\stderr.log
 echo.
 echo ACESSO A APLICACAO:
 echo   Aplicacao: http://localhost:3000
 echo   API: http://localhost:3000/api/health
-echo.
-echo VANTAGENS:
-echo   [+] Servidor unico - mais simples
-echo   [+] URLs originais mantidas (localhost:3001)
-echo   [+] Estrutura correta: payments -> subscriptions -> clients
-echo   [+] Nunca mais alterar URLs manualmente!
 echo.
 pause

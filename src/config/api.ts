@@ -2,10 +2,9 @@
 const isDevelopment = import.meta.env.DEV;
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-// Em produção, usa a mesma origem (porta 3000)
-// Em desenvolvimento, usa a porta 3001 do backend separado
+// Sempre usa porta 3000 (desenvolvimento e produção)
 export const API_BASE_URL = isDevelopment && isLocalhost
-    ? 'http://localhost:3001/api'  // Desenvolvimento
+    ? 'http://localhost:3000/api'  // Desenvolvimento
     : `${window.location.origin}/api`;  // Produção (mesma porta)
 
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {

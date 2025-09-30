@@ -34,10 +34,10 @@ import { useToast } from "@/hooks/use-toast";
 export const dbToAppPayment = (dbPayment: any): Payment => ({
   id: dbPayment.id,
   subscriptionId: dbPayment.subscription_id,
-  paymentDate: new Date(dbPayment.payment_date),
+  paymentDate: new Date(dbPayment.payment_date || dbPayment.created_at),
   amount: typeof dbPayment.amount === 'number' ? dbPayment.amount : parseFloat(dbPayment.amount) || 0,
   paymentMethod: dbPayment.payment_method,
-  confirmed: dbPayment.confirmed ?? false,
+  confirmed: dbPayment.status === 'paid' || dbPayment.confirmed === true,
 });
 
 export const appToDbPayment = (payment: Partial<Payment>) => ({
@@ -68,30 +68,30 @@ export const usePayments = () => {
       return (data || []).map((dbPayment) => {
         const payment = dbToAppPayment(dbPayment);
 
-        // Adicionar dados do cliente e matrícula para exibição
-        if (dbPayment.subscriptions) {
-          const subscription = dbPayment.subscriptions;
+        // Adicionar dados do cliente e matrícula para exibição (dados flat da query)
+        if (dbPayment.subscription_id) {
           payment.subscription = {
-            id: subscription.id,
-            clientId: subscription.client_id,
-            plan: subscription.plan as PlanType, // Fixing the type here
-            startDate: new Date(subscription.start_date),
-            endDate: new Date(subscription.end_date),
-            active: subscription.active
+            id: dbPayment.subscription_id,
+            clientId: dbPayment.client_id_real,
+            plan: dbPayment.subscription_plan as PlanType,
+            startDate: new Date(), // Não temos esses dados na query atual
+            endDate: new Date(),   // Não temos esses dados na query atual
+            active: true
           };
+        }
 
-          if (subscription.clients) {
-            payment.client = {
-              id: subscription.clients.id,
-              name: subscription.clients.name,
-              cpf: subscription.clients.cpf,
-              email: subscription.clients.email,
-              phone: subscription.clients.phone,
-              address: subscription.clients.address,
-              birthDate: new Date(subscription.clients.birth_date),
-              createdAt: new Date(subscription.clients.created_at)
-            };
-          }
+        // Cliente vem diretamente da query flat
+        if (dbPayment.client_name && dbPayment.client_name !== 'Cliente não encontrado') {
+          payment.client = {
+            id: dbPayment.client_id_real || '',
+            name: dbPayment.client_name,
+            cpf: '',
+            email: '',
+            phone: '',
+            address: '',
+            birthDate: new Date(),
+            createdAt: new Date()
+          };
         }
 
         return payment;

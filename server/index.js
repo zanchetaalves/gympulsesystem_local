@@ -8,7 +8,7 @@ import { createAuthRoutes, authenticateToken, requireRole } from './auth.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
@@ -383,18 +383,18 @@ const setupRoutes = () => {
         if (table === 'plans') {
             // Check if there are any subscriptions using this plan
             const subscriptionCheck = await query(
-                `SELECT COUNT(*) as count FROM subscriptions WHERE plan_id = $1`, 
+                `SELECT COUNT(*) as count FROM subscriptions WHERE plan_id = $1`,
                 [id]
             );
-            
+
             if (subscriptionCheck.error) {
                 return res.status(500).json({ error: subscriptionCheck.error });
             }
-            
+
             const subscriptionCount = parseInt(subscriptionCheck.data[0].count);
             if (subscriptionCount > 0) {
-                return res.status(400).json({ 
-                    error: `Não é possível excluir este plano pois existem ${subscriptionCount} matrícula(s) associada(s) a ele.` 
+                return res.status(400).json({
+                    error: `Não é possível excluir este plano pois existem ${subscriptionCount} matrícula(s) associada(s) a ele.`
                 });
             }
         }
