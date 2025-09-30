@@ -399,13 +399,11 @@ const Subscriptions = () => {
                               <DialogHeader>
                                 <DialogTitle>Editar Matrícula</DialogTitle>
                               </DialogHeader>
-                              {selectedSubscription && (
-                                <SubscriptionForm
-                                  onSubmit={handleEditSubscription}
-                                  isLoading={updateSubscription.isPending}
-                                  defaultValues={selectedSubscription}
-                                />
-                              )}
+                              <SubscriptionForm
+                                onSubmit={handleEditSubscription}
+                                isLoading={updateSubscription.isPending}
+                                defaultValues={selectedSubscription}
+                              />
                             </DialogContent>
                           </Dialog>
                         </TableCell>

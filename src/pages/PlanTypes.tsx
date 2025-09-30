@@ -182,17 +182,15 @@ const PlanTypes = () => {
                     <DialogHeader>
                         <DialogTitle>Editar Tipo de Plano</DialogTitle>
                     </DialogHeader>
-                    {selectedPlanType && (
-                        <PlanTypeForm
-                            onSubmit={handleEditPlanType}
-                            isLoading={updatePlanType.isPending}
-                            defaultValues={{
-                                name: selectedPlanType.name,
-                                description: selectedPlanType.description,
-                            }}
-                            isEditing
-                        />
-                    )}
+                    <PlanTypeForm
+                        onSubmit={handleEditPlanType}
+                        isLoading={updatePlanType.isPending}
+                        defaultValues={{
+                            name: selectedPlanType?.name || '',
+                            description: selectedPlanType?.description || '',
+                        }}
+                        isEditing
+                    />
                 </DialogContent>
             </Dialog>
 

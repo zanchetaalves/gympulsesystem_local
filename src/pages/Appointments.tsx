@@ -108,20 +108,11 @@ const Appointments = () => {
         deleteAppointment
     } = useAppointments();
 
-    // Transform appointments for calendar
-    const calendarEvents = useMemo(() => {
-        const events = appointments.map((appointment) => {
-            // Ensure we have valid date and time
-            if (!appointment.appointmentDate || !appointment.appointmentTime) {
-                return null;
-            }
-
+    // Transform appointments for calendar - Simplificado
+    const calendarEvents = appointments
+        .filter(appointment => appointment.appointmentDate && appointment.appointmentTime)
+        .map((appointment) => {
             const startDate = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
-
-            if (isNaN(startDate.getTime())) {
-                return null;
-            }
-
             const endDate = new Date(startDate.getTime() + (appointment.durationMinutes * 60000));
 
             return {
@@ -132,10 +123,8 @@ const Appointments = () => {
                 resource: appointment,
                 status: appointment.status,
             };
-        }).filter(event => event !== null);
-
-        return events;
-    }, [appointments]);
+        })
+        .filter(event => !isNaN(event.start.getTime()));
 
     const handleCreateAppointment = async (data: any) => {
         createAppointment.mutate(data, {
@@ -306,15 +295,12 @@ const Appointments = () => {
             </Card>
 
             {/* Details Dialog */}
-            <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Detalhes do Compromisso</DialogTitle>
-                        <DialogDescription>
-                            Visualize as informações completas do compromisso selecionado.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {selectedAppointment && (
+            {selectedAppointment && (
+                <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Detalhes do Compromisso</DialogTitle>
+                        </DialogHeader>
                         <div className="space-y-4">
                             <div>
                                 <h3 className="font-semibold text-lg">{selectedAppointment.title}</h3>
@@ -379,17 +365,17 @@ const Appointments = () => {
                                 </Button>
                             </div>
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
+            )}
 
             {/* Edit Dialog */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Editar Compromisso</DialogTitle>
-                    </DialogHeader>
-                    {selectedAppointment && (
+            {selectedAppointment && (
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Editar Compromisso</DialogTitle>
+                        </DialogHeader>
                         <AppointmentForm
                             onSubmit={handleEditAppointment}
                             isLoading={updateAppointment.isPending}
@@ -404,9 +390,9 @@ const Appointments = () => {
                             }}
                             isEditing
                         />
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
+            )}
 
             {/* Delete Dialog */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -261,13 +261,11 @@ const Clients = () => {
                               <DialogHeader>
                                 <DialogTitle>Editar Cliente</DialogTitle>
                               </DialogHeader>
-                              {selectedClient && (
-                                <ClientForm
-                                  onSubmit={handleEditClient}
-                                  isLoading={updateClient.isPending}
-                                  defaultValues={selectedClient}
-                                />
-                              )}
+                              <ClientForm
+                                onSubmit={handleEditClient}
+                                isLoading={updateClient.isPending}
+                                defaultValues={selectedClient}
+                              />
                             </DialogContent>
                           </Dialog>
 

@@ -16,7 +16,6 @@ import { PlanForm } from "@/components/plans/PlanForm";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -128,9 +127,6 @@ const Plans = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Plano</DialogTitle>
-            <DialogDescription>
-              Preencha as informações abaixo para criar um novo plano.
-            </DialogDescription>
           </DialogHeader>
           <PlanForm
             onSubmit={handleCreatePlan}
@@ -248,9 +244,6 @@ const Plans = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Editar Plano</DialogTitle>
-              <DialogDescription>
-                Modifique as informações do plano conforme necessário.
-              </DialogDescription>
             </DialogHeader>
             {selectedPlan && (
               <PlanForm

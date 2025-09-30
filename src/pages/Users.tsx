@@ -171,19 +171,17 @@ const Users = () => {
                             <DialogHeader>
                               <DialogTitle>Editar Usuário</DialogTitle>
                             </DialogHeader>
-                            {selectedUser && (
-                              <UserForm
-                                onSubmit={handleEditUser}
-                                isLoading={updateUser.isPending}
-                                defaultValues={{
-                                  id: selectedUser.id,
-                                  name: selectedUser.name || '',
-                                  email: selectedUser.email,
-                                  role: selectedUser.role,
-                                }}
-                                isEditing
-                              />
-                            )}
+                            <UserForm
+                              onSubmit={handleEditUser}
+                              isLoading={updateUser.isPending}
+                              defaultValues={{
+                                id: selectedUser?.id || '',
+                                name: selectedUser?.name || '',
+                                email: selectedUser?.email || '',
+                                role: selectedUser?.role || 'user',
+                              }}
+                              isEditing
+                            />
                           </DialogContent>
                         </Dialog>
 
