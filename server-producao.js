@@ -278,11 +278,12 @@ const setupAPIRoutes = () => {
             let query = `
                 SELECT 
                     p.*,
-                    COALESCE(c.name, 'Cliente não encontrado') as client_name,
-                    COALESCE(pl.name, 'Plano não encontrado') as plan_name,
+                    c.name as client_name,
+                    pl.name as plan_name,
                     s.id as subscription_id,
-                    s.plan as subscription_plan,
-                    c.id as client_id_real
+                    pl.name as subscription_plan,
+                    c.id as client_id_real,
+                    s.plan_id as subscription_plan_id
                 FROM payments p 
                 LEFT JOIN subscriptions s ON p.subscription_id = s.id
                 LEFT JOIN clients c ON s.client_id = c.id 
@@ -299,11 +300,23 @@ const setupAPIRoutes = () => {
 
             const result = await client.query(query, params);
 
-            // Debug: Log para identificar problemas
-            console.log(`[DEBUG] Payments query returned ${result.rows.length} rows`);
+            // 🔍 DEBUG DETALHADO: Verificar JOINs
+            console.log(`🔍 [DEBUG] Payments query returned ${result.rows.length} rows`);
+
             if (result.rows.length > 0) {
-                const firstRow = result.rows[0];
-                console.log(`[DEBUG] First payment: subscription_id=${firstRow.subscription_id}, client_name=${firstRow.client_name}`);
+                result.rows.forEach((row, index) => {
+                    if (index < 3) { // Mostrar apenas os 3 primeiros
+                        console.log(`🔍 [DEBUG] Payment ${index + 1}:`, {
+                            payment_id: row.id,
+                            subscription_id: row.subscription_id,
+                            client_name: row.client_name,
+                            client_id_real: row.client_id_real,
+                            amount: row.amount,
+                            hasSubscription: !!row.subscription_id,
+                            hasClient: !!row.client_name
+                        });
+                    }
+                });
             }
 
             res.json(result.rows);
@@ -355,18 +368,18 @@ const setupAPIRoutes = () => {
 
     app.post('/api/subscriptions', authenticateToken, async (req, res) => {
         try {
-            const { client_id, plan_id, plan, start_date, end_date, active = true, locked = false, lock_days } = req.body;
+            const { client_id, plan_id, start_date, end_date, active = true, locked = false, lock_days } = req.body;
 
             // Validações
-            if (!client_id || !plan_id || !plan || !start_date || !end_date) {
+            if (!client_id || !plan_id || !start_date || !end_date) {
                 return res.status(400).json({
-                    error: 'client_id, plan_id, plan, start_date and end_date are required'
+                    error: 'client_id, plan_id, start_date and end_date are required'
                 });
             }
 
             const result = await client.query(
-                'INSERT INTO subscriptions (client_id, plan_id, plan, start_date, end_date, active, locked, lock_days) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-                [client_id, plan_id, plan, start_date, end_date, active, locked, lock_days]
+                'INSERT INTO subscriptions (client_id, plan_id, start_date, end_date, active, locked, lock_days) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                [client_id, plan_id, start_date, end_date, active, locked, lock_days]
             );
 
             res.status(201).json(result.rows[0]);
@@ -446,11 +459,11 @@ const setupAPIRoutes = () => {
     app.put('/api/subscriptions/:id', authenticateToken, async (req, res) => {
         try {
             const { id } = req.params;
-            const { client_id, plan_id, plan, start_date, end_date, active, locked, lock_days } = req.body;
+            const { client_id, plan_id, start_date, end_date, active, locked, lock_days } = req.body;
 
             const result = await client.query(
-                'UPDATE subscriptions SET client_id = $1, plan_id = $2, plan = $3, start_date = $4, end_date = $5, active = $6, locked = $7, lock_days = $8 WHERE id = $9 RETURNING *',
-                [client_id, plan_id, plan, start_date, end_date, active, locked, lock_days, id]
+                'UPDATE subscriptions SET client_id = $1, plan_id = $2, start_date = $3, end_date = $4, active = $5, locked = $6, lock_days = $7 WHERE id = $8 RETURNING *',
+                [client_id, plan_id, start_date, end_date, active, locked, lock_days, id]
             );
 
             if (result.rows.length === 0) {

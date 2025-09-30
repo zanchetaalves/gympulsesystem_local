@@ -62,6 +62,23 @@ const Clients = () => {
 
   const { subscriptions } = useSubscriptions();
 
+  // 🔍 DEBUG TEMPORÁRIO - REMOVER DEPOIS
+  console.log('🔍 [DEBUG] Clients data:', {
+    clients,
+    clientsLength: clients?.length,
+    isLoadingClients,
+    clientsType: typeof clients,
+    isArray: Array.isArray(clients),
+    firstClient: clients[0]
+  });
+
+  console.log('🔍 [DEBUG] Subscriptions data:', {
+    subscriptions,
+    subscriptionsLength: subscriptions?.length,
+    subscriptionsType: typeof subscriptions,
+    isArray: Array.isArray(subscriptions)
+  });
+
   const getClientSubscriptionStatus = (clientId: string) => {
     const subscription = subscriptions.find(
       (sub) => sub.clientId === clientId && sub.active
@@ -85,6 +102,15 @@ const Clients = () => {
       return matchesSearch && matchesStatus;
     }
   );
+
+  // 🔍 DEBUG TEMPORÁRIO - REMOVER DEPOIS
+  console.log('🔍 [DEBUG] Filtered clients:', {
+    filteredClients,
+    filteredClientsLength: filteredClients?.length,
+    searchTerm,
+    statusFilter,
+    firstFilteredClient: filteredClients[0]
+  });
 
   const handleCreateClient = async (data: any) => {
     createClient.mutate({

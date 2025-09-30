@@ -80,7 +80,9 @@ export const usePlans = () => {
     queryKey: ['plans'],
     queryFn: async () => {
       const response = await apiCall('/plans');
-      return response.map(dbToAppPlan);
+      // 🔧 CORREÇÃO: API pode retornar {data: Array} em vez de Array direto
+      const plansArray = Array.isArray(response) ? response : response?.data || [];
+      return plansArray.map(dbToAppPlan);
     },
   });
 

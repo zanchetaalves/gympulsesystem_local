@@ -62,7 +62,21 @@ export const usePlanTypes = () => {
         queryFn: async () => {
             try {
                 const result = await apiCall('/plan_types?orderBy=name&ascending=true');
-                return (result || []).map(dbToAppPlanType);
+                console.log('Plan types API result:', result); // Debug log
+
+                // 🔧 CORREÇÃO: API pode retornar {data: Array} em vez de Array direto
+                let planTypesArray;
+                if (Array.isArray(result)) {
+                    planTypesArray = result;
+                } else if (result?.data && Array.isArray(result.data)) {
+                    console.log('🔍 [DEBUG] Usando result.data para plan types');
+                    planTypesArray = result.data;
+                } else {
+                    console.warn('Plan types API returned unexpected format:', result);
+                    return [];
+                }
+
+                return planTypesArray.map(dbToAppPlanType);
             } catch (error) {
                 console.error('Error fetching plan types:', error);
                 toast({

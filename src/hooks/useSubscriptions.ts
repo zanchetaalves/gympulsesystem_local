@@ -77,7 +77,9 @@ export const useSubscriptions = () => {
     queryKey: ['subscriptions'],
     queryFn: async () => {
       const response = await apiCall('/subscriptions');
-      return response.map(dbToAppSubscription);
+      // 🔧 CORREÇÃO: API pode retornar {data: Array} em vez de Array direto
+      const subscriptionsArray = Array.isArray(response) ? response : response?.data || [];
+      return subscriptionsArray.map(dbToAppSubscription);
     },
   });
 

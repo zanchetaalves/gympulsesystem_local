@@ -94,8 +94,42 @@ export const useClients = () => {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const response = await apiCall('/clients');
-      return response.map(dbToAppClient);
+      try {
+        console.log('🔍 [DEBUG] Fazendo chamada para /clients...');
+        const response = await apiCall('/clients');
+        console.log('🔍 [DEBUG] Resposta da API /clients:', {
+          response,
+          responseType: typeof response,
+          isArray: Array.isArray(response),
+          length: response?.length,
+          hasDataProperty: response?.data !== undefined,
+          dataIsArray: Array.isArray(response?.data)
+        });
+
+        // 🔧 CORREÇÃO: API retorna {data: Array} em vez de Array direto
+        let clientsArray;
+        if (Array.isArray(response)) {
+          clientsArray = response;
+        } else if (response?.data && Array.isArray(response.data)) {
+          console.log('🔍 [DEBUG] Usando response.data (formato {data: Array})');
+          clientsArray = response.data;
+        } else {
+          console.warn('🔍 [DEBUG] Formato inesperado da API:', response);
+          return [];
+        }
+
+        const mappedClients = clientsArray.map(dbToAppClient);
+        console.log('🔍 [DEBUG] Clientes mapeados:', {
+          mappedClients,
+          mappedLength: mappedClients?.length,
+          firstMapped: mappedClients[0]
+        });
+
+        return mappedClients;
+      } catch (error) {
+        console.error('🔍 [DEBUG] Erro na API /clients:', error);
+        throw error;
+      }
     },
   });
 
