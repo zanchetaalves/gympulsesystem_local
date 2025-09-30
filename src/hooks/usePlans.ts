@@ -80,7 +80,7 @@ export const usePlans = () => {
     queryKey: ['plans'],
     queryFn: async () => {
       const response = await apiCall('/plans');
-      return response.data.map(dbToAppPlan);
+      return response.map(dbToAppPlan);
     },
   });
 
@@ -93,7 +93,7 @@ export const usePlans = () => {
         method: 'POST',
         body: JSON.stringify(dbData),
       });
-      return dbToAppPlan(response.data);
+      return dbToAppPlan(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
@@ -124,7 +124,7 @@ export const usePlans = () => {
         method: 'PUT',
         body: JSON.stringify(dbData),
       });
-      return dbToAppPlan(response.data);
+      return dbToAppPlan(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });

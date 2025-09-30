@@ -95,7 +95,7 @@ export const useClients = () => {
     queryKey: ['clients'],
     queryFn: async () => {
       const response = await apiCall('/clients');
-      return response.data.map(dbToAppClient);
+      return response.map(dbToAppClient);
     },
   });
 
@@ -107,7 +107,7 @@ export const useClients = () => {
         method: 'POST',
         body: JSON.stringify(dbData),
       });
-      return dbToAppClient(response.data);
+      return dbToAppClient(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -134,7 +134,7 @@ export const useClients = () => {
         method: 'PUT',
         body: JSON.stringify(dbData),
       });
-      return dbToAppClient(response.data);
+      return dbToAppClient(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });

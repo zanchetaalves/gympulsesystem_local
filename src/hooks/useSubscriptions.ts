@@ -77,7 +77,7 @@ export const useSubscriptions = () => {
     queryKey: ['subscriptions'],
     queryFn: async () => {
       const response = await apiCall('/subscriptions');
-      return response.data.map(dbToAppSubscription);
+      return response.map(dbToAppSubscription);
     },
   });
 
@@ -89,7 +89,7 @@ export const useSubscriptions = () => {
         method: 'POST',
         body: JSON.stringify(dbData),
       });
-      return dbToAppSubscription(response.data);
+      return dbToAppSubscription(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -119,7 +119,7 @@ export const useSubscriptions = () => {
         method: 'PUT',
         body: JSON.stringify(dbData),
       });
-      return dbToAppSubscription(response.data);
+      return dbToAppSubscription(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });

@@ -85,7 +85,7 @@ export const useAppointments = () => {
         queryFn: async () => {
             try {
                 const result = await apiCall('/appointments?orderBy=appointment_date,appointment_time&ascending=true');
-                return (result.data || []).map(dbToAppAppointment);
+                return (result || []).map(dbToAppAppointment);
             } catch (error) {
                 console.error('Error fetching appointments:', error);
                 toast({
@@ -107,7 +107,7 @@ export const useAppointments = () => {
         queryFn: async () => {
             try {
                 const result = await apiCall('/appointments/upcoming');
-                return (result.data || []).map(dbToAppAppointment);
+                return (result || []).map(dbToAppAppointment);
             } catch (error) {
                 console.error('Error fetching upcoming appointments:', error);
                 return [];

@@ -63,7 +63,7 @@ export const usePayments = () => {
     queryKey: ['payments'],
     queryFn: async () => {
       const response = await apiCall('/payments');
-      const data = response.data;
+      const data = response;
 
       return (data || []).map((dbPayment) => {
         const payment = dbToAppPayment(dbPayment);
