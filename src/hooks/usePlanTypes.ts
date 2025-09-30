@@ -18,7 +18,7 @@ export const usePlanTypes = () => {
     const apiCall = async (endpoint: string, options: RequestInit = {}) => {
         const token = localStorage.getItem('access_token');
 
-        const response = await fetch(`http://localhost:3001/api${endpoint}`, {
+        const response = await fetch(`http://localhost:3000/api${endpoint}`, {
             headers: {
                 'Content-Type': 'application/json',
                 ...(token && { Authorization: `Bearer ${token}` }),

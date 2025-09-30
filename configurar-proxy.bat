@@ -24,13 +24,13 @@ if not exist "%PROD_DIR%" (
 )
 
 echo.
-echo [INFO] Configurando proxy para solucionar URLs automaticamente...
+echo [INFO] Configurando servidor unificado para solucionar URLs automaticamente...
 echo.
 echo COMO FUNCIONA:
-echo - Backend roda na porta 3001 (API + Banco)
-echo - Proxy roda na porta 3000 (Frontend + redirecionamento)
+echo - Servidor unico na porta 3000 (API + Frontend integrados)
 echo - Frontend mantem URLs originais (localhost:3001)
-echo - Proxy redireciona automaticamente
+echo - Servidor resolve automaticamente as rotas
+echo - Estrutura correta: payments -> subscriptions -> clients
 echo - NUNCA mais alterar URLs manualmente!
 echo.
 
@@ -38,67 +38,51 @@ cd /d "%PROD_DIR%"
 
 echo [INFO] Testando estrutura de arquivos...
 
-if not exist "server-backend.js" (
-    echo [ERRO] server-backend.js nao encontrado
+if not exist "server-producao.js" (
+    echo [ERRO] server-producao.js nao encontrado
     echo Execute setup-producao.bat novamente
     pause
     exit /b 1
 )
 
-if not exist "server-proxy.js" (
-    echo [ERRO] server-proxy.js nao encontrado
-    echo Execute setup-producao.bat novamente
-    pause
-    exit /b 1
-)
-
-echo [OK] Arquivos encontrados
+echo [OK] Arquivo encontrado
 
 echo.
-echo [INFO] Testando backend na porta 3001...
-start /B "" cmd /c "start-backend.bat" >nul 2>&1
-echo [INFO] Aguardando backend inicializar...
-timeout /t 8 /nobreak >nul
+echo [INFO] Testando servidor unificado na porta 3000...
+start /B "" cmd /c "start-aplicacao.bat" >nul 2>&1
+echo [INFO] Aguardando servidor inicializar...
+timeout /t 10 /nobreak >nul
 
-powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3001/api/health' -TimeoutSec 10; Write-Host '[OK] Backend funcionando na porta 3001:', $response.StatusCode } catch { Write-Host '[AVISO] Backend nao respondeu - verifique logs' }"
+powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000/api/health' -TimeoutSec 15; Write-Host '[OK] API funcionando na porta 3000:', $response.StatusCode } catch { Write-Host '[AVISO] API nao respondeu - verifique logs' }"
 
-echo.
-echo [INFO] Testando proxy na porta 3000...
-start /B "" cmd /c "start-proxy.bat" >nul 2>&1
-echo [INFO] Aguardando proxy inicializar...
-timeout /t 8 /nobreak >nul
-
-powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000/api/health' -TimeoutSec 10; Write-Host '[OK] Proxy funcionando na porta 3000:', $response.StatusCode } catch { Write-Host '[AVISO] Proxy nao respondeu - verifique logs' }"
-
-powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000/' -TimeoutSec 10; Write-Host '[OK] Frontend carregando na porta 3000:', $response.StatusCode } catch { Write-Host '[AVISO] Frontend nao carregou - verifique dist/' }"
+powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000/' -TimeoutSec 15; Write-Host '[OK] Frontend carregando na porta 3000:', $response.StatusCode } catch { Write-Host '[AVISO] Frontend nao carregou - verifique dist/' }"
 
 echo.
-echo [INFO] Parando processos de teste...
+echo [INFO] Parando processo de teste...
 taskkill /f /im node.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
 echo.
 echo ======================================================
-echo [SUCESSO] PROXY CONFIGURADO E TESTADO!
+echo [SUCESSO] SERVIDOR CONFIGURADO E TESTADO!
 echo ======================================================
 echo.
 echo FUNCIONAMENTO:
-echo   Backend:  http://localhost:3001/api (direto)
-echo   Frontend: http://localhost:3000     (via proxy)
-echo   API:      http://localhost:3000/api (via proxy)
+echo   Aplicacao: http://localhost:3000     (tudo integrado)
+echo   API:       http://localhost:3000/api (mesma porta)
+echo   Frontend:  http://localhost:3000     (servido pelo Node.js)
 echo.
 echo VANTAGENS:
-echo   [+] Frontend NUNCA precisa ser alterado
-echo   [+] URLs originais mantidas (localhost:3001)
+echo   [+] Servidor unico - mais simples
+echo   [+] Frontend mantem URLs originais (localhost:3001)
 echo   [+] Atualizacoes sem alteracao manual
-echo   [+] Proxy automatico e transparente
+echo   [+] Estrutura correta: payments -> subscriptions -> clients
 echo.
 echo PROXIMOS PASSOS:
-echo 1. configurar-servico.bat (criar servicos Windows)
+echo 1. configurar-servico.bat (criar servico Windows)
 echo 2. Acessar: http://localhost:3000
 echo.
 echo PARA TESTAR AGORA:
-echo   Terminal 1: %PROD_DIR%\start-backend.bat
-echo   Terminal 2: %PROD_DIR%\start-proxy.bat
+echo   Execute: %PROD_DIR%\start-aplicacao.bat
 echo.
 pause

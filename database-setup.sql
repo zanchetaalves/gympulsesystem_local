@@ -72,13 +72,6 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_plan_id ON subscriptions(plan_id);
 CREATE INDEX IF NOT EXISTS idx_payments_subscription_id ON payments(subscription_id);
 CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date);
 
--- Insert some sample data
-INSERT INTO plans (name, type, price_brl, description, duration_months) VALUES
-('Mensal', 'Mensal', 79.90, 'Plano mensal da academia', 1),
-('Anual', 'Anual', 899.90, 'Plano anual com desconto especial', 12),
-('Trimestral', 'Trimestral', 300.00, 'Plano trimestral ideal para iniciantes', 3)
-ON CONFLICT DO NOTHING;
-
 INSERT INTO users (name, email, profile) VALUES
 ('Administrador', 'admin@gympulse.com', 'admin'),
 ('Recepcionista', 'recepcao@gympulse.com', 'staff')

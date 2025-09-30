@@ -4,7 +4,7 @@ import { Client } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { createErrorHandler, formatDatabaseError } from "@/lib/error-utils";
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // HTTP client helper
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {

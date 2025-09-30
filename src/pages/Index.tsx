@@ -29,7 +29,7 @@ const Index = () => {
 
       // Call the RPC function through our new API
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:3001/api/rpc/allow_all_ips_db_access', {
+      const response = await fetch('http://localhost:3000/api/rpc/allow_all_ips_db_access', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

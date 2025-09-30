@@ -9,7 +9,7 @@ import { createAuthRoutes, authenticateToken, requireRole } from './server/auth.
 
 // ES Modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__dirname);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -249,13 +249,13 @@ const setupAPIRoutes = () => {
                 SELECT p.*, c.name as client_name, pl.name as plan_name, s.id as subscription_id
                 FROM payments p 
                 LEFT JOIN subscriptions s ON p.subscription_id = s.id
-                LEFT JOIN clients c ON s.cliente_id = c.id 
+                LEFT JOIN clients c ON s.client_id = c.id 
                 LEFT JOIN plans pl ON s.plan_id = pl.id
             `;
             let params = [];
 
             if (client_id) {
-                query += ' WHERE s.cliente_id = $1';
+                query += ' WHERE s.client_id = $1';
                 params = [client_id];
             }
 
@@ -289,7 +289,7 @@ const setupAPIRoutes = () => {
             const result = await client.query(`
                 SELECT s.*, c.name as client_name, p.name as plan_name
                 FROM subscriptions s
-                LEFT JOIN clients c ON s.cliente_id = c.id
+                LEFT JOIN clients c ON s.client_id = c.id
                 LEFT JOIN plans p ON s.plan_id = p.id
                 ORDER BY s.created_at DESC
             `);
