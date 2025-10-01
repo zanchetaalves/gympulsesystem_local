@@ -496,12 +496,24 @@ const setupAPIRoutes = () => {
     app.put('/api/subscriptions/:id', authenticateToken, async (req, res) => {
         try {
             const { id } = req.params;
+            console.log('🔍 [DEBUG] PUT /api/subscriptions/:id - Body recebido:', req.body);
+            console.log('🔍 [DEBUG] ID da subscription:', id);
+            
             const { client_id, plan_id, start_date, end_date, active, locked, lock_days } = req.body;
+
+            console.log('🔍 [DEBUG] Campos extraídos para UPDATE:', {
+                client_id, plan_id, start_date, end_date, active, locked, lock_days
+            });
 
             const result = await client.query(
                 'UPDATE subscriptions SET client_id = $1, plan_id = $2, start_date = $3, end_date = $4, active = $5, locked = $6, lock_days = $7 WHERE id = $8 RETURNING *',
                 [client_id, plan_id, start_date, end_date, active, locked, lock_days, id]
             );
+
+            console.log('✅ [DEBUG] UPDATE executado, linhas afetadas:', result.rows.length);
+            if (result.rows.length > 0) {
+                console.log('✅ [DEBUG] Subscription atualizada:', result.rows[0]);
+            }
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Subscription not found' });
