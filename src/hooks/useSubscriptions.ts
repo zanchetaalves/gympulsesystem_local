@@ -31,22 +31,32 @@ import { Subscription } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 // Adapter functions para converter entre os formatos do banco e da aplicação
-export const dbToAppSubscription = (dbSubscription: any): Subscription => ({
-  id: dbSubscription.id,
-  clientId: dbSubscription.client_id,
-  plan: dbSubscription.plan,
-  startDate: new Date(dbSubscription.start_date),
-  endDate: new Date(dbSubscription.end_date),
-  active: dbSubscription.active ?? true,
-  locked: dbSubscription.locked ?? false,
-  lockDays: dbSubscription.lock_days || undefined,
-});
+export const dbToAppSubscription = (dbSubscription: any): Subscription => {
+  console.log('🔍 [DEBUG] dbToAppSubscription - dados do banco:', {
+    id: dbSubscription.id,
+    plan_id: dbSubscription.plan_id,
+    plan_type: dbSubscription.plan_type,
+    plan_name: dbSubscription.plan_name
+  });
+
+  return {
+    id: dbSubscription.id,
+    clientId: dbSubscription.client_id,
+    plan: dbSubscription.plan_type || "Plano não definido", // ✅ Usar plan_type do JOIN (Mensal, Anual, etc)
+    planId: dbSubscription.plan_id, // ✅ Adicionar planId para referência
+    startDate: new Date(dbSubscription.start_date),
+    endDate: new Date(dbSubscription.end_date),
+    active: dbSubscription.active ?? true,
+    locked: dbSubscription.locked ?? false,
+    lockDays: dbSubscription.lock_days || undefined,
+  };
+};
 
 export const appToDbSubscription = (subscription: Partial<Subscription>) => {
   const result: any = {};
 
   if (subscription.clientId !== undefined) result.client_id = subscription.clientId;
-  if (subscription.plan !== undefined) result.plan = subscription.plan;
+  if (subscription.planId !== undefined) result.plan_id = subscription.planId;
   if (subscription.startDate !== undefined) {
     result.start_date = subscription.startDate instanceof Date
       ? subscription.startDate.toISOString().split('T')[0]
@@ -85,11 +95,12 @@ export const useSubscriptions = () => {
 
   // Mutation para criar matrícula
   const createSubscription = useMutation({
-    mutationFn: async (data: Partial<Subscription>) => {
-      const dbData = appToDbSubscription(data);
+    mutationFn: async (data: any) => {
+      // 🔧 CORREÇÃO: SubscriptionForm já envia no formato correto do banco
+      console.log('🔍 [DEBUG] useSubscriptions - dados recebidos:', data);
       const response = await apiCall('/subscriptions', {
         method: 'POST',
-        body: JSON.stringify(dbData),
+        body: JSON.stringify(data),
       });
       return dbToAppSubscription(response);
     },

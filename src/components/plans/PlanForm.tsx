@@ -80,7 +80,7 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do Plano</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Nome do Plano</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -94,7 +94,7 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Tipo</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -134,7 +134,7 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descrição</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Descrição</FormLabel>
               <FormControl>
                 <Textarea {...field} />
               </FormControl>
@@ -148,7 +148,7 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
           name="durationMonths"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Duração (meses)</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Duração (meses)</FormLabel>
               <FormControl>
                 <Input
                   type="text"
@@ -174,7 +174,7 @@ export function PlanForm({ onSubmit, isLoading, defaultValues }: PlanFormProps) 
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Ativo</FormLabel>
+                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Ativo</FormLabel>
               </div>
             </FormItem>
           )}

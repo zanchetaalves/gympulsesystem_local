@@ -66,9 +66,10 @@ echo [OK] Servico parado
 echo.
 echo [INFO] Atualizando arquivos...
 
-REM Atualizar servidor unificado
+REM Atualizar servidor unificado e migração
 copy "server-producao.js" "%PROD_DIR%\server-producao.js" >nul
 copy "package-producao.json" "%PROD_DIR%\package.json" >nul
+copy "run-migration.js" "%PROD_DIR%\run-migration.js" >nul
 echo [OK] Servidor unificado atualizado
 
 REM Atualizar frontend (dist) - SEM ALTERACOES!
@@ -94,6 +95,15 @@ if %errorlevel% neq 0 (
 )
 
 echo [OK] Dependencias OK
+
+echo.
+echo [INFO] Executando ajustes de estrutura do banco...
+node run-migration.js
+if %errorlevel% neq 0 (
+    echo [ERRO] Erro nos ajustes do banco
+    goto RESTORE_BACKUP
+)
+echo [OK] Estrutura do banco ajustada
 
 echo.
 echo [INFO] Reiniciando servico...
@@ -124,9 +134,11 @@ echo   [+] Servidor unificado (server-producao.js)
 echo   [+] Frontend (dist/) - URLs corrigidas
 echo   [+] Modulos e scripts
 echo   [+] Dependencias
+echo   [+] Estrutura do banco (coluna plan removida)
 echo.
 echo VANTAGEM: Servidor unico - mais simples e estavel!
 echo URLs corrigidas para porta 3000!
+echo Estrutura corrigida: subscriptions usa apenas plan_id
 echo.
 goto END
 

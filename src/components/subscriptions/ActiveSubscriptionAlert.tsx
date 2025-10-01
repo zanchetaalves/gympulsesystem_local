@@ -45,7 +45,7 @@ export function ActiveSubscriptionAlert({
                 </div>
 
                 <div className="text-sm text-muted-foreground">
-                    <p>Plano: <strong>{subscription.plan}</strong></p>
+                    <p>Plano: <strong>{subscription.plan || "Plano não definido"}</strong></p>
                     <p className="mt-1">
                         Para criar uma nova matrícula, aguarde o vencimento da atual ou
                         desative a matrícula existente.

@@ -56,7 +56,7 @@ export function UserForm({ onSubmit, isLoading, defaultValues, isEditing = false
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Nome</FormLabel>
               <FormControl>
                 <Input placeholder="Nome do usuário" {...field} />
               </FormControl>
@@ -70,7 +70,7 @@ export function UserForm({ onSubmit, isLoading, defaultValues, isEditing = false
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Email</FormLabel>
               <FormControl>
                 <Input placeholder="email@exemplo.com" type="email" {...field} />
               </FormControl>
@@ -85,7 +85,7 @@ export function UserForm({ onSubmit, isLoading, defaultValues, isEditing = false
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Senha</FormLabel>
                 <FormControl>
                   <Input placeholder="******" type="password" {...field} />
                 </FormControl>
@@ -100,7 +100,7 @@ export function UserForm({ onSubmit, isLoading, defaultValues, isEditing = false
           name="role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Função</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Função</FormLabel>
               <FormControl>
                 <select {...field} className="w-full p-2 border rounded">
                   <option value="user">Usuário</option>

@@ -25,22 +25,22 @@ export function DateInput({ name, label = "Data", placeholder = "DD/MM/AAAA" }: 
   // Função para converter string de data (DD/MM/YYYY) para objeto Date
   const stringToDate = (dateString: string): Date | undefined => {
     if (!dateString || dateString.length !== 10) return undefined;
-    
+
     const [day, month, year] = dateString.split('/').map(Number);
     if (isNaN(day) || isNaN(month) || isNaN(year)) return undefined;
-    
+
     // Importante: o mês no construtor Date é base 0 (janeiro = 0)
     const date = new Date(year, month - 1, day);
-    
+
     // Verificar se é uma data válida
     if (
-      date.getDate() !== day || 
-      date.getMonth() !== month - 1 || 
+      date.getDate() !== day ||
+      date.getMonth() !== month - 1 ||
       date.getFullYear() !== year
     ) {
       return undefined;
     }
-    
+
     return date;
   };
 
@@ -60,10 +60,10 @@ export function DateInput({ name, label = "Data", placeholder = "DD/MM/AAAA" }: 
             setInputValue("");
           }
         }, [field.value]);
-        
+
         return (
           <FormItem className="flex flex-col">
-            <FormLabel>{label}</FormLabel>
+            <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>{label}</FormLabel>
             <Popover open={open} onOpenChange={setOpen}>
               <div className="relative">
                 <FormControl>

@@ -45,6 +45,7 @@ export const dbToAppClient = (dbClient: any): Client => ({
   birthDate: dbClient.birth_date ? new Date(dbClient.birth_date) : new Date(),
   createdAt: new Date(dbClient.created_at),
   photoUrl: dbClient.photo_url || null,
+  observations: dbClient.observations || null,
 });
 
 export const appToDbClient = (client: Partial<Client>) => {
@@ -72,6 +73,7 @@ export const appToDbClient = (client: Partial<Client>) => {
   if (client.address !== undefined) result.address = client.address || null;
   if (birthDateStr !== null) result.birth_date = birthDateStr;
   if (client.photoUrl !== undefined) result.photo_url = client.photoUrl;
+  if (client.observations !== undefined) result.observations = client.observations || null;
   if (client.createdAt !== undefined) {
     result.created_at = client.createdAt instanceof Date
       ? client.createdAt.toISOString()

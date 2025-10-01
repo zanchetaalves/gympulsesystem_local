@@ -19,7 +19,7 @@ export function CPFInput({ name, label = "CPF", placeholder = "000.000.000-00" }
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>{label}</FormLabel>
           <FormControl>
             <MaskedInput
               mask="000.000.000-00"

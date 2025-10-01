@@ -158,6 +158,7 @@ export function SubscriptionForm({
       locked: false,
       ...formattedDefaultValues,
       clientId: selectedClientId || defaultValues?.clientId || "",
+      plan: defaultValues?.plan || "", // ✅ Definir o plano padrão
       lockDays: defaultValues?.lockDays || undefined,
     },
   });
@@ -221,7 +222,17 @@ export function SubscriptionForm({
   };
 
   const handleSubmit = (data: SubscriptionFormData) => {
-    if (!endDate) return;
+    console.log('🔍 [DEBUG] Dados recebidos do formulário:', data);
+
+    if (!endDate) {
+      console.error('🚨 [ERROR] endDate não está definido!');
+      return;
+    }
+
+    if (!data.startDate) {
+      console.error('🚨 [ERROR] startDate não está definido!');
+      return;
+    }
 
     // Convert startDate string to Date object without timezone adjustments
     const startDateParts = data.startDate.split('-').map(Number);
@@ -233,13 +244,49 @@ export function SubscriptionForm({
     const endDateDay = endDate.getDate();
     const endDateObj = new Date(endDateYear, endDateMonth, endDateDay);
 
-    const formattedData = {
-      ...data,
+    // Validar campos obrigatórios
+    if (!data.clientId) {
+      console.error('🚨 [ERROR] clientId não está definido!');
+      return;
+    }
+
+    if (!data.plan) {
+      console.error('🚨 [ERROR] plan não está definido!');
+      return;
+    }
+
+    // 🔧 CORREÇÃO: Converter plan (tipo) para plan_id
+    const selectedPlan = plans.find(p => p.type === data.plan);
+    if (!selectedPlan) {
+      console.error('🚨 [ERROR] Plano não encontrado:', data.plan, 'Planos disponíveis:', plans.map(p => p.type));
+      return;
+    }
+
+    // 🔍 DEBUG: Verificar datas
+    console.log('🔍 [DEBUG] Datas do formulário:', {
+      originalStartDate: data.startDate,
+      startDateParts,
       startDate,
-      endDate: endDateObj,
-      clientId: data.clientId,
+      endDate,
+      endDateObj
+    });
+
+    const formattedData = {
+      client_id: data.clientId,
+      plan_id: selectedPlan.id, // ✅ Enviar plan_id em vez de plan
+      start_date: startDate.toISOString().split('T')[0], // ✅ Formato YYYY-MM-DD
+      end_date: endDateObj.toISOString().split('T')[0], // ✅ Formato YYYY-MM-DD
       active: data.active,
+      locked: data.locked || false,
+      lock_days: data.lockDays || null,
     };
+
+    // ✅ Adicionar ID apenas se estiver editando
+    if (data.id) {
+      formattedData.id = data.id;
+    }
+
+    console.log('🔍 [DEBUG] Payload final:', formattedData);
 
     onSubmit(formattedData);
   };
@@ -252,7 +299,7 @@ export function SubscriptionForm({
           name="clientId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cliente</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Cliente</FormLabel>
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
@@ -287,7 +334,7 @@ export function SubscriptionForm({
           name="plan"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Plano</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Plano</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -312,7 +359,7 @@ export function SubscriptionForm({
           name="startDate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Data de Início</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Data de Início</FormLabel>
               <FormControl>
                 <Input
                   placeholder="DD/MM/AAAA"
@@ -326,7 +373,7 @@ export function SubscriptionForm({
         />
 
         <div className="mb-4">
-          <FormLabel>Data de Término</FormLabel>
+          <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Data de Término</FormLabel>
           <Input
             type="text"
             value={endDate && isValid(endDate) ? format(endDate, "dd/MM/yyyy") : ''}
@@ -355,7 +402,7 @@ export function SubscriptionForm({
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Trancar</FormLabel>
+                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Trancar</FormLabel>
                 <p className="text-sm text-muted-foreground">
                   Trancar matrícula por um período determinado
                 </p>
@@ -370,7 +417,7 @@ export function SubscriptionForm({
             name="lockDays"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Quantidade de dias para trancamento</FormLabel>
+                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Quantidade de dias para trancamento</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -404,7 +451,7 @@ export function SubscriptionForm({
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Ativo</FormLabel>
+                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Ativo</FormLabel>
               </div>
             </FormItem>
           )}

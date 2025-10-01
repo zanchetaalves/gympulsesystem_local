@@ -18,12 +18,14 @@ export interface Client {
   birthDate: Date;
   createdAt: Date;
   photoUrl?: string | null;
+  observations?: string | null;
 }
 
 export interface Subscription {
   id: string;
   clientId: string;
-  plan: PlanType;
+  plan: PlanType; // Tipo do plano (Mensal, Anual, etc) - vem do JOIN
+  planId?: string; // ID do plano na tabela plans
   startDate: Date;
   endDate: Date;
   active: boolean;

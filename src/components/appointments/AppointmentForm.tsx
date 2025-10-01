@@ -90,7 +90,7 @@ export function AppointmentForm({
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Título</FormLabel>
+                            <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Título</FormLabel>
                             <FormControl>
                                 <Input placeholder="Ex: Avaliação Física, Treino Personalizado" {...field} />
                             </FormControl>
@@ -104,7 +104,7 @@ export function AppointmentForm({
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Descrição</FormLabel>
+                            <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Descrição</FormLabel>
                             <FormControl>
                                 <Textarea
                                     placeholder="Descrição do compromisso..."
@@ -123,7 +123,7 @@ export function AppointmentForm({
                         name="appointmentDate"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Data</FormLabel>
+                                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Data</FormLabel>
                                 <FormControl>
                                     <Input type="date" {...field} />
                                 </FormControl>
@@ -137,7 +137,7 @@ export function AppointmentForm({
                         name="appointmentTime"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Horário</FormLabel>
+                                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Horário</FormLabel>
                                 <FormControl>
                                     <Input type="time" {...field} />
                                 </FormControl>
@@ -153,7 +153,7 @@ export function AppointmentForm({
                         name="durationMinutes"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Duração (minutos)</FormLabel>
+                                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Duração (minutos)</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="number"
@@ -172,7 +172,7 @@ export function AppointmentForm({
                         name="status"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Status</FormLabel>
+                                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Status</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
@@ -197,7 +197,7 @@ export function AppointmentForm({
                     name="clientId"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Cliente (opcional)</FormLabel>
+                            <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Cliente (opcional)</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || undefined}>
                                 <FormControl>
                                     <SelectTrigger>

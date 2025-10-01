@@ -243,22 +243,25 @@ const setupRoutes = () => {
 
         // Handle joins for related data
         if (table === 'subscriptions') {
-            joinClause = ' LEFT JOIN clients ON subscriptions.client_id = clients.id';
+            joinClause = ' LEFT JOIN clients ON subscriptions.client_id = clients.id LEFT JOIN plans ON subscriptions.plan_id = plans.id';
             sql = `SELECT subscriptions.*, 
            clients.id as clients_id, clients.name as clients_name, clients.cpf as clients_cpf, 
            clients.email as clients_email, clients.phone as clients_phone, clients.address as clients_address, 
-           clients.birth_date as clients_birth_date, clients.created_at as clients_created_at
+           clients.birth_date as clients_birth_date, clients.created_at as clients_created_at,
+           plans.name as plan_name, plans.type as plan_type
            FROM subscriptions${joinClause}`;
         } else if (table === 'payments') {
             joinClause = ` LEFT JOIN subscriptions ON payments.subscription_id = subscriptions.id
-                   LEFT JOIN clients ON subscriptions.client_id = clients.id`;
+                   LEFT JOIN clients ON subscriptions.client_id = clients.id
+                   LEFT JOIN plans ON subscriptions.plan_id = plans.id`;
             sql = `SELECT payments.*, 
            subscriptions.id as subscriptions_id, subscriptions.client_id as subscriptions_client_id, 
-           subscriptions.plan as subscriptions_plan, subscriptions.start_date as subscriptions_start_date, 
+           subscriptions.plan_id as subscriptions_plan_id, subscriptions.start_date as subscriptions_start_date, 
            subscriptions.end_date as subscriptions_end_date, subscriptions.active as subscriptions_active,
            clients.id as clients_id, clients.name as clients_name, clients.cpf as clients_cpf, 
            clients.email as clients_email, clients.phone as clients_phone, clients.address as clients_address, 
-           clients.birth_date as clients_birth_date, clients.created_at as clients_created_at
+           clients.birth_date as clients_birth_date, clients.created_at as clients_created_at,
+           plans.name as plan_name, plans.type as plan_type
            FROM payments${joinClause}`;
         }
 

@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { WebcamCapture } from "./WebcamCapture";
 import { DateInput } from "@/components/form/DateInput";
@@ -37,6 +38,10 @@ const formSchema = z.object({
     required_error: "Data de nascimento é obrigatória",
   }),
   photoUrl: z.string().nullable().optional(),
+  observations: z.string()
+    .max(500, "Observações devem ter no máximo 500 caracteres")
+    .optional()
+    .transform(val => val === "" ? undefined : val),
 });
 
 type ClientFormData = z.infer<typeof formSchema>;
@@ -61,6 +66,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
       // Use a data diretamente sem ajustes de timezone
       birthDate: defaultValues?.birthDate ? new Date(defaultValues.birthDate) : undefined,
       photoUrl: defaultValues?.photoUrl || null,
+      observations: defaultValues?.observations || "",
     },
   });
 
@@ -87,7 +93,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Nome</FormLabel>
                   <FormControl>
                     <Input placeholder="Nome do cliente" {...field} />
                   </FormControl>
@@ -103,7 +109,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email (opcional)</FormLabel>
+                  <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Email (opcional)</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="email@exemplo.com"
@@ -124,7 +130,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Endereço (opcional)</FormLabel>
+                  <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Endereço (opcional)</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Rua, número, bairro, cidade"
@@ -138,6 +144,29 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
             />
 
             <DateInput name="birthDate" label="Data de Nascimento" />
+
+            <FormField
+              control={form.control}
+              name="observations"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Observações (opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Informações adicionais sobre o cliente..."
+                      className="min-h-[80px] resize-none"
+                      maxLength={500}
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground text-right">
+                    {(field.value || '').length}/500 caracteres
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <div>
@@ -146,7 +175,7 @@ export function ClientForm({ onSubmit, isLoading, defaultValues }: ClientFormPro
               name="photoUrl"
               render={() => (
                 <FormItem>
-                  <FormLabel>Foto (opcional)</FormLabel>
+                  <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Foto (opcional)</FormLabel>
                   <FormControl>
                     <WebcamCapture
                       onCapture={handlePhotoCapture}

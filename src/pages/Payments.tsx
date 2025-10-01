@@ -216,7 +216,7 @@ const Payments = () => {
                         <TableCell>
                           {subscription.client?.name || "Cliente não encontrado"}
                         </TableCell>
-                        <TableCell>{subscription.plan}</TableCell>
+                        <TableCell>{subscription.plan || "Plano não definido"}</TableCell>
                         <TableCell>
                           <Button
                             variant="outline"

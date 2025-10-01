@@ -16,58 +16,77 @@ async function runMigration() {
         await client.connect();
         console.log('✅ Connected to database');
 
-        // Step 1: Verify current data
-        console.log('\n🔍 Step 1: Checking current subscription data...');
-        const checkResult = await client.query(`
-            SELECT 
-                s.id,
-                s.plan as current_plan_text,
-                s.plan_id as current_plan_id,
-                p.name as plan_name_from_id
-            FROM subscriptions s
-            LEFT JOIN plans p ON s.plan_id = p.id
-            LIMIT 5
+        // Step 1: Verificar se a coluna 'plan' existe
+        console.log('\n🔍 Step 1: Verificando estrutura da tabela subscriptions...');
+        const checkColumnResult = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'subscriptions' 
+            AND column_name = 'plan'
         `);
 
-        console.log('Current subscriptions:', checkResult.rows);
+        if (checkColumnResult.rows.length > 0) {
+            console.log('✅ Coluna "plan" encontrada - precisa ser removida');
 
-        // Step 2: Update plan_id based on plan text (if needed)
-        console.log('\n🔧 Step 2: Updating plan_id based on plan text...');
-        const updateResult = await client.query(`
-            UPDATE subscriptions 
-            SET plan_id = (
-                SELECT p.id 
-                FROM plans p 
-                WHERE LOWER(p.name) = LOWER(subscriptions.plan)
-                LIMIT 1
-            )
-            WHERE plan_id IS NULL
+            // Step 2: Remover a coluna plan TEXT
+            console.log('\n🗑️ Step 2: Removendo coluna "plan" (texto desnecessário)...');
+            await client.query('ALTER TABLE subscriptions DROP COLUMN IF EXISTS plan');
+            console.log('✅ Coluna "plan" removida com sucesso');
+        } else {
+            console.log('✅ Coluna "plan" já foi removida anteriormente');
+        }
+
+        // Step 2.5: Adicionar coluna observations na tabela clients (se não existir)
+        console.log('\n🔍 Step 2.5: Verificando coluna observations na tabela clients...');
+        const checkObservationsResult = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'clients' 
+            AND column_name = 'observations'
         `);
 
-        console.log(`Updated ${updateResult.rowCount} subscriptions with missing plan_id`);
+        if (checkObservationsResult.rows.length === 0) {
+            console.log('➕ Adicionando coluna "observations" na tabela clients...');
+            await client.query(`
+                ALTER TABLE clients 
+                ADD COLUMN observations TEXT CHECK (length(observations) <= 500)
+            `);
+            console.log('✅ Coluna "observations" adicionada com sucesso (máx 500 chars)');
+        } else {
+            console.log('✅ Coluna "observations" já existe na tabela clients');
+        }
 
-        // Step 3: Remove the plan TEXT column
-        console.log('\n🗑️ Step 3: Removing plan TEXT column...');
-        await client.query('ALTER TABLE subscriptions DROP COLUMN IF EXISTS plan');
-        console.log('✅ Column "plan" removed successfully');
+        // Step 3: Verificar se a estrutura está correta
+        console.log('\n✅ Step 3: Verificando estrutura final...');
 
-        // Step 4: Verify the fix
-        console.log('\n✅ Step 4: Verifying the fix...');
-        const verifyResult = await client.query(`
-            SELECT 
-                s.id,
-                s.plan_id,
-                p.name as plan_name,
-                p.price_brl,
-                c.name as client_name
-            FROM subscriptions s
-            JOIN plans p ON s.plan_id = p.id
-            JOIN clients c ON s.client_id = c.id
-            LIMIT 5
+        // Verificar subscriptions
+        const subscriptionsStructure = await client.query(`
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns 
+            WHERE table_name = 'subscriptions' 
+            AND column_name IN ('plan_id', 'client_id')
+            ORDER BY column_name
         `);
 
-        console.log('Fixed subscriptions:', verifyResult.rows);
-        console.log('\n🎉 Migration completed successfully!');
+        console.log('Estrutura da tabela subscriptions:');
+        subscriptionsStructure.rows.forEach(row => {
+            console.log(`  - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        });
+
+        // Verificar clients
+        const clientsStructure = await client.query(`
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns 
+            WHERE table_name = 'clients' 
+            AND column_name = 'observations'
+        `);
+
+        console.log('Estrutura da tabela clients (observations):');
+        clientsStructure.rows.forEach(row => {
+            console.log(`  - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        });
+
+        console.log('\n🎉 Migração de estrutura concluída com sucesso!');
 
     } catch (error) {
         console.error('❌ Migration failed:', error);

@@ -19,7 +19,7 @@ export function PhoneInput({ name, label = "Telefone", placeholder = "(00) 00000
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>{label}</FormLabel>
           <FormControl>
             <MaskedInput
               mask="(00) 00000-0000"

@@ -52,7 +52,7 @@ export function PlanTypeForm({
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Nome</FormLabel>
+                            <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Nome</FormLabel>
                             <FormControl>
                                 <Input placeholder="Ex: Mensal, Trimestral, Anual" {...field} />
                             </FormControl>
@@ -66,7 +66,7 @@ export function PlanTypeForm({
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Descrição</FormLabel>
+                            <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Descrição</FormLabel>
                             <FormControl>
                                 <Textarea
                                     placeholder="Descrição do tipo de plano..."

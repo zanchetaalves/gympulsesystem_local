@@ -218,7 +218,7 @@ const setupAPIRoutes = () => {
 
     app.post('/api/clients', authenticateToken, async (req, res) => {
         try {
-            const { name, cpf, email, phone, address, birth_date, photo_url } = req.body;
+            const { name, cpf, email, phone, address, birth_date, photo_url, observations } = req.body;
 
             // Validações
             if (!name || !phone || !birth_date) {
@@ -227,9 +227,16 @@ const setupAPIRoutes = () => {
                 });
             }
 
+            // Validar tamanho das observações
+            if (observations && observations.length > 500) {
+                return res.status(400).json({
+                    error: 'Observations must be 500 characters or less'
+                });
+            }
+
             const result = await client.query(
-                'INSERT INTO clients (name, cpf, email, phone, address, birth_date, photo_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                [name, cpf, email, phone, address, birth_date, photo_url]
+                'INSERT INTO clients (name, cpf, email, phone, address, birth_date, photo_url, observations) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                [name, cpf, email, phone, address, birth_date, photo_url, observations]
             );
 
             res.status(201).json(result.rows[0]);
@@ -242,11 +249,18 @@ const setupAPIRoutes = () => {
     app.put('/api/clients/:id', authenticateToken, async (req, res) => {
         try {
             const { id } = req.params;
-            const { name, cpf, email, phone, address, birth_date, photo_url } = req.body;
+            const { name, cpf, email, phone, address, birth_date, photo_url, observations } = req.body;
+
+            // Validar tamanho das observações
+            if (observations && observations.length > 500) {
+                return res.status(400).json({
+                    error: 'Observations must be 500 characters or less'
+                });
+            }
 
             const result = await client.query(
-                'UPDATE clients SET name = $1, cpf = $2, email = $3, phone = $4, address = $5, birth_date = $6, photo_url = $7 WHERE id = $8 RETURNING *',
-                [name, cpf, email, phone, address, birth_date, photo_url, id]
+                'UPDATE clients SET name = $1, cpf = $2, email = $3, phone = $4, address = $5, birth_date = $6, photo_url = $7, observations = $8 WHERE id = $9 RETURNING *',
+                [name, cpf, email, phone, address, birth_date, photo_url, observations, id]
             );
 
             if (result.rows.length === 0) {
@@ -352,13 +366,22 @@ const setupAPIRoutes = () => {
     // Subscriptions routes
     app.get('/api/subscriptions', async (req, res) => {
         try {
+            console.log('🔍 [DEBUG] GET /api/subscriptions - Executando query...');
             const result = await client.query(`
-                SELECT s.*, c.name as client_name, p.name as plan_name
+                SELECT s.*, c.name as client_name, p.name as plan_name, p.type as plan_type
                 FROM subscriptions s
                 LEFT JOIN clients c ON s.client_id = c.id
                 LEFT JOIN plans p ON s.plan_id = p.id
                 ORDER BY s.created_at DESC
             `);
+            
+            console.log('🔍 [DEBUG] Query retornou', result.rows.length, 'subscriptions');
+            if (result.rows.length > 0) {
+                console.log('🔍 [DEBUG] Primeira subscription completa:', result.rows[0]);
+                console.log('🔍 [DEBUG] Plan_id da primeira subscription:', result.rows[0].plan_id);
+                console.log('🔍 [DEBUG] Plan_type da primeira subscription:', result.rows[0].plan_type);
+            }
+            
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching subscriptions:', error);
@@ -368,19 +391,33 @@ const setupAPIRoutes = () => {
 
     app.post('/api/subscriptions', authenticateToken, async (req, res) => {
         try {
+            console.log('🔍 [DEBUG] POST /api/subscriptions - Body recebido:', req.body);
+
             const { client_id, plan_id, start_date, end_date, active = true, locked = false, lock_days } = req.body;
+
+            console.log('🔍 [DEBUG] Campos extraídos:', {
+                client_id, plan_id, start_date, end_date, active, locked, lock_days
+            });
 
             // Validações
             if (!client_id || !plan_id || !start_date || !end_date) {
+                console.error('🚨 [ERROR] Campos obrigatórios faltando:', {
+                    client_id: !!client_id,
+                    plan_id: !!plan_id,
+                    start_date: !!start_date,
+                    end_date: !!end_date
+                });
                 return res.status(400).json({
                     error: 'client_id, plan_id, start_date and end_date are required'
                 });
             }
 
+            console.log('🔍 [DEBUG] Executando INSERT...');
             const result = await client.query(
                 'INSERT INTO subscriptions (client_id, plan_id, start_date, end_date, active, locked, lock_days) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
                 [client_id, plan_id, start_date, end_date, active, locked, lock_days]
             );
+            console.log('✅ [DEBUG] INSERT executado com sucesso:', result.rows[0]);
 
             res.status(201).json(result.rows[0]);
         } catch (error) {

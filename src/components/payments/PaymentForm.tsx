@@ -136,7 +136,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
         setSelectedClientId(subscription.clientId);
 
         // Sugerir valor do plano automaticamente (apenas se não houver valor padrão)
-        if (!defaultValues?.amount) {
+        if (!defaultValues?.amount && subscription.plan) {
           const planPrice = getPlanPrice(subscription.plan);
           if (planPrice > 0) {
             form.setValue("amount", planPrice);
@@ -151,7 +151,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     const subscription_id = form.watch("subscription_id");
     if (subscription_id && !defaultValues?.amount) {
       const subscription = subscriptions.find(sub => sub.id === subscription_id);
-      if (subscription) {
+      if (subscription && subscription.plan) {
         const planPrice = getPlanPrice(subscription.plan);
         if (planPrice > 0) {
           form.setValue("amount", planPrice);
@@ -200,7 +200,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="flex items-center space-x-4 mb-4">
-          <FormLabel className="text-sm font-medium text-gray-500 min-w-[100px]">Cliente:</FormLabel>
+          <FormLabel className="!text-left block text-sm font-medium text-gray-500 min-w-[100px]" style={{ textAlign: 'left' }}>Cliente:</FormLabel>
           <Select
             value={selectedClientId || undefined}
             onValueChange={setSelectedClientId}
@@ -224,7 +224,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
           name="subscription_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Matrícula</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Matrícula</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -234,7 +234,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
                 <SelectContent>
                   {clientSubscriptions.map((subscription) => (
                     <SelectItem key={subscription.id} value={subscription.id}>
-                      {subscription.clientName} - {subscription.plan}
+                      {subscription.clientName} - {subscription.plan || "Plano não definido"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -249,7 +249,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
           name="payment_date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Data de Pagamento</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Data de Pagamento</FormLabel>
               <FormControl>
                 <Input
                   placeholder="DD/MM/AAAA"
@@ -282,7 +282,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
           name="payment_method"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Método de Pagamento</FormLabel>
+              <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Método de Pagamento</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -315,7 +315,7 @@ export function PaymentForm({ onSubmit, isLoading, defaultValues, selectedSubscr
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Pagamento Confirmado</FormLabel>
+                <FormLabel className="!text-left block" style={{ textAlign: 'left' }}>Pagamento Confirmado</FormLabel>
               </div>
             </FormItem>
           )}

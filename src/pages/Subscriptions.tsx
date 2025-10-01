@@ -58,6 +58,13 @@ const Subscriptions = () => {
   const { clients } = useClients();
   const { plans } = usePlans();
 
+  // 🔍 DEBUG: Verificar dados das subscriptions
+  console.log('🔍 [DEBUG] Subscriptions na tela:', {
+    subscriptions,
+    subscriptionsLength: subscriptions?.length,
+    firstSubscription: subscriptions?.[0]
+  });
+
   const handleCreateSubscription = async (data: any) => {
     createSubscription.mutate(data, {
       onSuccess: () => {
@@ -128,7 +135,7 @@ const Subscriptions = () => {
       (client && client.name.toLowerCase().includes(clientFilter.toLowerCase()));
 
     // Filtro por plano
-    const matchesPlan = planFilter === "todos" || subscription.plan === planFilter;
+    const matchesPlan = planFilter === "todos" || (subscription.plan && subscription.plan === planFilter);
 
     // Filtro por status
     const matchesStatus = statusFilter === "todos" ||
@@ -354,7 +361,7 @@ const Subscriptions = () => {
                         <TableCell className="font-medium">{client?.name || "Cliente não encontrado"}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={planColor}>
-                            {subscription.plan}
+                            {subscription.plan || "Plano não definido"}
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(subscription.startDate)}</TableCell>
