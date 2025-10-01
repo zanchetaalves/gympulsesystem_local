@@ -122,15 +122,13 @@ export const useSubscriptions = () => {
 
   // Mutation para atualizar matrícula
   const updateSubscription = useMutation({
-    mutationFn: async (data: Partial<Subscription>) => {
-      const dbData = {
-        ...appToDbSubscription(data),
-        id: data.id
-      };
+    mutationFn: async (data: any) => {
+      // 🔧 CORREÇÃO: SubscriptionForm já envia no formato correto do banco
+      console.log('🔍 [DEBUG] updateSubscription - dados recebidos:', data);
 
       const response = await apiCall(`/subscriptions/${data.id}`, {
         method: 'PUT',
-        body: JSON.stringify(dbData),
+        body: JSON.stringify(data),
       });
       return dbToAppSubscription(response);
     },
