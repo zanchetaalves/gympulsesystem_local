@@ -33,6 +33,8 @@ import {
 import { Plan } from "@/types";
 import { usePlans } from "@/hooks/usePlans";
 import { formatCurrency } from "@/lib/utils";
+import { usePagination } from "@/hooks/usePagination";
+import { Pagination } from "@/components/ui/pagination";
 
 const Plans = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -48,6 +50,13 @@ const Plans = () => {
     updatePlan,
     deletePlan
   } = usePlans();
+
+  // Paginação
+  const pagination = usePagination({
+    data: plans,
+    itemsPerPage: 6,
+    dependencies: []
+  });
 
   const handleCreatePlan = async (data: any) => {
     try {
@@ -157,14 +166,14 @@ const Plans = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plans.length === 0 ? (
+                {pagination.paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-4">
-                      Nenhum plano cadastrado
+                      {plans.length === 0 ? "Nenhum plano cadastrado" : "Nenhum plano nesta página"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  plans.map((plan) => (
+                  pagination.paginatedData.map((plan) => (
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">{plan.name}</TableCell>
                       <TableCell>
@@ -204,6 +213,21 @@ const Plans = () => {
               </TableBody>
             </Table>
           )}
+
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={plans.length}
+            itemsPerPage={6}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setCurrentPage}
+            onPreviousPage={pagination.goToPreviousPage}
+            onNextPage={pagination.goToNextPage}
+            canGoPrevious={pagination.canGoPrevious}
+            canGoNext={pagination.canGoNext}
+            itemName="planos"
+          />
         </CardContent>
       </Card>
 

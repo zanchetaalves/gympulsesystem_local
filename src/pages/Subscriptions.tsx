@@ -33,6 +33,8 @@ import { Subscription, Client } from "@/types";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useClients } from "@/hooks/useClients";
 import { usePlans } from "@/hooks/usePlans";
+import { usePagination } from "@/hooks/usePagination";
+import { Pagination } from "@/components/ui/pagination";
 
 const Subscriptions = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -147,6 +149,13 @@ const Subscriptions = () => {
     return matchesClient && matchesPlan && matchesStatus;
   });
 
+  // Paginação
+  const pagination = usePagination({
+    data: filteredSubscriptions,
+    itemsPerPage: 6,
+    dependencies: [clientFilter, planFilter, statusFilter]
+  });
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -240,20 +249,20 @@ const Subscriptions = () => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         {activePlans.map((plan) => (
           <Card key={plan.id} className="overflow-hidden">
-            <CardHeader className={`${plan.color} py-3`}>
-              <CardTitle className="text-center">{plan.type}</CardTitle>
+            <CardHeader className={`${plan.color} py-2`}>
+              <CardTitle className="text-center text-sm font-medium">{plan.type}</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl font-bold mb-2">
+            <CardContent className="p-3 text-center">
+              <div className="text-lg font-bold mb-2">
                 {new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL'
                 }).format(plan.priceBrl)}
               </div>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-3 text-xs">
                 {plan.durationMonths === 1
                   ? 'Mensal'
                   : plan.durationMonths === 3
@@ -261,7 +270,8 @@ const Subscriptions = () => {
                     : 'Anual'}
               </p>
               <Button
-                className="w-full bg-gym-primary hover:bg-gym-secondary"
+                size="sm"
+                className="w-full bg-gym-primary hover:bg-gym-secondary text-xs py-1"
                 onClick={() => setSelectClientDialogOpen(true)}
               >
                 Selecionar
@@ -344,14 +354,14 @@ const Subscriptions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSubscriptions.length === 0 ? (
+                {pagination.paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-4">
-                      {subscriptions.length === 0 ? "Nenhuma matrícula cadastrada" : "Nenhuma matrícula encontrada com os filtros aplicados"}
+                      {filteredSubscriptions.length === 0 ? "Nenhuma matrícula encontrada com os filtros aplicados" : "Nenhuma matrícula nesta página"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSubscriptions.map((subscription) => {
+                  pagination.paginatedData.map((subscription) => {
                     const client = clients.find(c => c.id === subscription.clientId);
                     const status = getSubscriptionStatus(subscription);
                     const planColor = plans.find(p => p.type === subscription.plan)?.color || '';
@@ -421,6 +431,21 @@ const Subscriptions = () => {
               </TableBody>
             </Table>
           )}
+
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={filteredSubscriptions.length}
+            itemsPerPage={6}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setCurrentPage}
+            onPreviousPage={pagination.goToPreviousPage}
+            onNextPage={pagination.goToNextPage}
+            canGoPrevious={pagination.canGoPrevious}
+            canGoNext={pagination.canGoNext}
+            itemName="matrículas"
+          />
         </CardContent>
       </Card>
     </div>

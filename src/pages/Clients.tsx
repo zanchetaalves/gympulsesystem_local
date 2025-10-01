@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDate, formatCPF, formatPhone, calculateAge } from "@/lib/utils";
-import { Plus, Search, Edit, Trash2, Camera } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ClientForm } from "@/components/clients/ClientForm";
 import {
   Dialog,
@@ -50,6 +50,10 @@ const Clients = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // Usando hooks personalizados
   const {
@@ -102,6 +106,22 @@ const Clients = () => {
       return matchesSearch && matchesStatus;
     }
   );
+
+  // Lógica de paginação
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+  // Reset da página quando os filtros mudam
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
+
+  // Resetar paginação quando filtros mudam
+  React.useEffect(() => {
+    resetPagination();
+  }, [searchTerm, statusFilter]);
 
   // 🔍 DEBUG TEMPORÁRIO - REMOVER DEPOIS
   console.log('🔍 [DEBUG] Filtered clients:', {
@@ -238,14 +258,14 @@ const Clients = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClients.length === 0 ? (
+                  {paginatedClients.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-4">
-                        Nenhum cliente cadastrado
+                        {filteredClients.length === 0 ? "Nenhum cliente cadastrado" : "Nenhum cliente nesta página"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredClients.map((client) => (
+                    paginatedClients.map((client) => (
                       <TableRow key={client.id}>
                         <TableCell>
                           <Avatar>
@@ -337,6 +357,50 @@ const Clients = () => {
                   )}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Controles de Paginação */}
+          {filteredClients.length > itemsPerPage && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredClients.length)} de {filteredClients.length} clientes
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

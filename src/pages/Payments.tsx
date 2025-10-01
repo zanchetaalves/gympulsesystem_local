@@ -43,6 +43,8 @@ import { Payment, Subscription } from "@/types";
 import { usePayments } from "@/hooks/usePayments";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useClients } from "@/hooks/useClients";
+import { usePagination } from "@/hooks/usePagination";
+import { Pagination } from "@/components/ui/pagination";
 
 const Payments = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -152,6 +154,13 @@ const Payments = () => {
       (statusFilter === "pendente" && !payment.confirmed);
 
     return matchesClient && matchesDate && matchesMethod && matchesStatus;
+  });
+
+  // Paginação
+  const pagination = usePagination({
+    data: filteredPayments,
+    itemsPerPage: 6,
+    dependencies: [clientFilter, dateFilter, methodFilter, statusFilter]
   });
 
   return (
@@ -342,14 +351,14 @@ const Payments = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPayments.length === 0 ? (
+                {pagination.paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-4">
-                      {payments.length === 0 ? "Nenhum pagamento cadastrado" : "Nenhum pagamento encontrado com os filtros aplicados"}
+                      {filteredPayments.length === 0 ? "Nenhum pagamento encontrado com os filtros aplicados" : "Nenhum pagamento nesta página"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPayments.map((payment) => (
+                  pagination.paginatedData.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.client?.name || "Cliente não encontrado"}</TableCell>
                       <TableCell>{formatDate(payment.paymentDate)}</TableCell>
@@ -411,6 +420,21 @@ const Payments = () => {
               </TableBody>
             </Table>
           )}
+
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={filteredPayments.length}
+            itemsPerPage={6}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setCurrentPage}
+            onPreviousPage={pagination.goToPreviousPage}
+            onNextPage={pagination.goToNextPage}
+            canGoPrevious={pagination.canGoPrevious}
+            canGoNext={pagination.canGoNext}
+            itemName="pagamentos"
+          />
         </CardContent>
       </Card>
     </div>
