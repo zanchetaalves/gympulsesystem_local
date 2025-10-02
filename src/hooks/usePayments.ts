@@ -183,11 +183,38 @@ export const usePayments = () => {
     },
   });
 
+  // Mutation para excluir pagamento
+  const deletePayment = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const response = await apiCall(`/payments/${paymentId}`, {
+        method: 'DELETE',
+      });
+
+      // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em response.data
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast({
+        title: "Sucesso",
+        description: "Pagamento excluído com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir pagamento: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     payments,
     isLoading,
     error,
     createPayment,
-    updatePayment
+    updatePayment,
+    deletePayment
   };
 };

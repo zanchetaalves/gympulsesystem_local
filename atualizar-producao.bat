@@ -21,12 +21,36 @@ set TIMESTAMP=%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:
 set TIMESTAMP=%TIMESTAMP: =0%
 
 echo.
+echo [INFO] Preparando projeto baixado do GitHub...
+
+REM Instalar dependências (necessário após baixar do GitHub)
+echo [INFO] Instalando dependencias...
+call npm install
+if %errorlevel% neq 0 (
+    echo [ERRO] Erro ao instalar dependencias
+    echo Verifique se o Node.js esta instalado
+    pause
+    exit /b 1
+)
+echo [OK] Dependencias instaladas
+
+REM Fazer build do projeto
+echo [INFO] Fazendo build do projeto...
+call npm run build
+if %errorlevel% neq 0 (
+    echo [ERRO] Erro ao fazer build
+    echo Verifique se nao ha erros no codigo
+    pause
+    exit /b 1
+)
+echo [OK] Build concluido
+
+echo.
 echo [INFO] Verificacoes pre-atualizacao...
 
-REM Verificar se tem novo build
+REM Verificar se o build foi criado com sucesso
 if not exist "dist\index.html" (
-    echo [ERRO] Pasta 'dist' nao encontrada!
-    echo Execute 'npm run build' primeiro
+    echo [ERRO] Build falhou - pasta 'dist' nao encontrada!
     pause
     exit /b 1
 )
@@ -130,15 +154,19 @@ echo Backup mantido em: %BACKUP_FOLDER%
 echo Aplicacao: http://localhost:3000
 echo.
 echo O QUE FOI ATUALIZADO:
+echo   [+] Dependencias instaladas automaticamente
+echo   [+] Build gerado automaticamente
 echo   [+] Servidor unificado (server-producao.js)
 echo   [+] Frontend (dist/) - URLs corrigidas
 echo   [+] Modulos e scripts
-echo   [+] Dependencias
-echo   [+] Estrutura do banco (coluna plan removida)
+echo   [+] Dependencias de producao
+echo   [+] Estrutura do banco (migracoes aplicadas)
 echo.
-echo VANTAGEM: Servidor unico - mais simples e estavel!
-echo URLs corrigidas para porta 3000!
-echo Estrutura corrigida: subscriptions usa apenas plan_id
+echo VANTAGEM: Processo automatizado completo!
+echo - Baixe do GitHub e execute este script
+echo - Instala dependencias automaticamente
+echo - Faz build automaticamente
+echo - Atualiza producao automaticamente
 echo.
 goto END
 

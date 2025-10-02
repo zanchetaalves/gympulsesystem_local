@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, BarChart2, Search, X } from "lucide-react";
+import { Plus, Check, BarChart2, Search, X, Edit, Trash2 } from "lucide-react";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 import {
   Dialog,
@@ -30,6 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -50,6 +51,8 @@ const Payments = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectSubscriptionDialogOpen, setSelectSubscriptionDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [subscriptionSearchQuery, setSubscriptionSearchQuery] = useState("");
@@ -65,7 +68,8 @@ const Payments = () => {
     payments,
     isLoading: isLoadingPayments,
     createPayment,
-    updatePayment
+    updatePayment,
+    deletePayment
   } = usePayments();
 
   const { subscriptions } = useSubscriptions();
@@ -86,6 +90,31 @@ const Payments = () => {
         setCreateDialogOpen(false);
         setSelectSubscriptionDialogOpen(false);
         setSelectedSubscription(null);
+      }
+    });
+  };
+
+  const handleEditPayment = async (data: any) => {
+    if (!selectedPayment) return;
+
+    updatePayment.mutate({
+      ...data,
+      id: selectedPayment.id
+    }, {
+      onSuccess: () => {
+        setEditDialogOpen(false);
+        setSelectedPayment(null);
+      }
+    });
+  };
+
+  const handleDeletePayment = async () => {
+    if (!selectedPayment) return;
+
+    deletePayment.mutate(selectedPayment.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setSelectedPayment(null);
       }
     });
   };
@@ -374,45 +403,114 @@ const Payments = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <AlertDialog
-                          open={confirmDialogOpen && selectedPayment?.id === payment.id}
-                          onOpenChange={(open) => {
-                            setConfirmDialogOpen(open);
-                            if (!open) setSelectedPayment(null);
-                          }}
-                        >
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Botão Confirmar (apenas para pagamentos não confirmados) */}
                           {!payment.confirmed && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPayment(payment);
-                                setConfirmDialogOpen(true);
+                            <AlertDialog
+                              open={confirmDialogOpen && selectedPayment?.id === payment.id}
+                              onOpenChange={(open) => {
+                                setConfirmDialogOpen(open);
+                                if (!open) setSelectedPayment(null);
                               }}
                             >
-                              <Check className="mr-2 h-4 w-4" />
-                              Confirmar
-                            </Button>
-                          )}
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirmar Pagamento</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Você está confirmando o recebimento do pagamento no valor de {formatCurrency(selectedPayment?.amount || 0)}. Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={handleConfirmPayment}
-                                disabled={updatePayment.isPending}
-                                className="bg-gym-primary text-primary-foreground hover:bg-gym-secondary"
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPayment(payment);
+                                  setConfirmDialogOpen(true);
+                                }}
                               >
-                                {updatePayment.isPending ? "Confirmando..." : "Confirmar pagamento"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Check className="mr-2 h-4 w-4" />
+                                Confirmar
+                              </Button>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmar Pagamento</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Você está confirmando o recebimento do pagamento no valor de {formatCurrency(selectedPayment?.amount || 0)}. Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={handleConfirmPayment}
+                                    disabled={updatePayment.isPending}
+                                    className="bg-gym-primary text-primary-foreground hover:bg-gym-secondary"
+                                  >
+                                    {updatePayment.isPending ? "Confirmando..." : "Confirmar pagamento"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+
+                          {/* Botão Editar */}
+                          <Dialog open={editDialogOpen && selectedPayment?.id === payment.id} onOpenChange={(open) => {
+                            setEditDialogOpen(open);
+                            if (!open) setSelectedPayment(null);
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedPayment(payment)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Editar Pagamento</DialogTitle>
+                              </DialogHeader>
+                              {selectedPayment && (
+                                <PaymentForm
+                                  onSubmit={handleEditPayment}
+                                  isLoading={updatePayment.isPending}
+                                  defaultValues={selectedPayment}
+                                  selectedSubscriptionId={selectedPayment.subscriptionId}
+                                />
+                              )}
+                            </DialogContent>
+                          </Dialog>
+
+                          {/* Botão Excluir */}
+                          <AlertDialog
+                            open={deleteDialogOpen && selectedPayment?.id === payment.id}
+                            onOpenChange={(open) => {
+                              setDeleteDialogOpen(open);
+                              if (!open) setSelectedPayment(null);
+                            }}
+                          >
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedPayment(payment)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir Pagamento</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir este pagamento no valor de {formatCurrency(selectedPayment?.amount || 0)}? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleDeletePayment}
+                                  disabled={deletePayment.isPending}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deletePayment.isPending ? "Excluindo..." : "Excluir"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
