@@ -139,7 +139,10 @@ export const useAppointments = () => {
                 method: 'POST',
                 body: JSON.stringify(dbData),
             });
-            return dbToAppAppointment(result.data);
+
+            // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em result.data
+            console.log("🔍 [DEBUG] Appointment creation response:", result);
+            return dbToAppAppointment(result);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -167,7 +170,9 @@ export const useAppointments = () => {
                 method: 'PUT',
                 body: JSON.stringify(dbData),
             });
-            return dbToAppAppointment(result.data);
+
+            // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em result.data
+            return dbToAppAppointment(result);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -192,7 +197,9 @@ export const useAppointments = () => {
             const result = await apiCall(`/appointments/${id}`, {
                 method: 'DELETE',
             });
-            return result.data;
+
+            // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em result.data
+            return result;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['appointments'] });

@@ -119,7 +119,8 @@ export const useUsers = () => {
         body: JSON.stringify(updateData),
       });
 
-      return result.data;
+      // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em result.data
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth-users'] });
@@ -149,7 +150,8 @@ export const useUsers = () => {
         method: 'DELETE',
       });
 
-      return result.data;
+      // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em result.data
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth-users'] });

@@ -37,7 +37,8 @@ export const dbToAppPayment = (dbPayment: any): Payment => ({
   paymentDate: new Date(dbPayment.payment_date || dbPayment.created_at),
   amount: typeof dbPayment.amount === 'number' ? dbPayment.amount : parseFloat(dbPayment.amount) || 0,
   paymentMethod: dbPayment.payment_method,
-  confirmed: dbPayment.status === 'paid' || dbPayment.confirmed === true,
+  // 🔧 CORREÇÃO: Usar apenas o campo 'confirmed' do banco, não o 'status'
+  confirmed: dbPayment.confirmed === true,
 });
 
 export const appToDbPayment = (payment: Partial<Payment>) => ({
@@ -129,7 +130,10 @@ export const usePayments = () => {
         method: 'POST',
         body: JSON.stringify(dbData),
       });
-      return dbToAppPayment(response.data);
+
+      // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em response.data
+      console.log("🔍 [DEBUG] Response from backend:", response);
+      return dbToAppPayment(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -159,7 +163,9 @@ export const usePayments = () => {
         method: 'PUT',
         body: JSON.stringify(dbData),
       });
-      return dbToAppPayment(response.data);
+
+      // 🔧 CORREÇÃO: Backend retorna o objeto diretamente, não em response.data
+      return dbToAppPayment(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });

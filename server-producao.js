@@ -342,7 +342,11 @@ const setupAPIRoutes = () => {
 
     app.post('/api/payments', authenticateToken, async (req, res) => {
         try {
-            const { subscription_id, payment_date, amount, payment_method, status = 'paid' } = req.body;
+            const { subscription_id, payment_date, amount, payment_method, status = 'paid', confirmed = false } = req.body;
+
+            console.log('🔍 [DEBUG] Payment creation data:', {
+                subscription_id, payment_date, amount, payment_method, status, confirmed
+            });
 
             // Validações
             if (!subscription_id || !payment_date || !amount || !payment_method) {
@@ -352,10 +356,11 @@ const setupAPIRoutes = () => {
             }
 
             const result = await client.query(
-                'INSERT INTO payments (subscription_id, payment_date, amount, payment_method, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [subscription_id, payment_date, amount, payment_method, status]
+                'INSERT INTO payments (subscription_id, payment_date, amount, payment_method, status, confirmed) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [subscription_id, payment_date, amount, payment_method, status, confirmed]
             );
 
+            console.log('🔍 [DEBUG] Payment created:', result.rows[0]);
             res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating payment:', error);
@@ -374,14 +379,14 @@ const setupAPIRoutes = () => {
                 LEFT JOIN plans p ON s.plan_id = p.id
                 ORDER BY s.created_at DESC
             `);
-            
+
             console.log('🔍 [DEBUG] Query retornou', result.rows.length, 'subscriptions');
             if (result.rows.length > 0) {
                 console.log('🔍 [DEBUG] Primeira subscription completa:', result.rows[0]);
                 console.log('🔍 [DEBUG] Plan_id da primeira subscription:', result.rows[0].plan_id);
                 console.log('🔍 [DEBUG] Plan_type da primeira subscription:', result.rows[0].plan_type);
             }
-            
+
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching subscriptions:', error);
@@ -498,7 +503,7 @@ const setupAPIRoutes = () => {
             const { id } = req.params;
             console.log('🔍 [DEBUG] PUT /api/subscriptions/:id - Body recebido:', req.body);
             console.log('🔍 [DEBUG] ID da subscription:', id);
-            
+
             const { client_id, plan_id, start_date, end_date, active, locked, lock_days } = req.body;
 
             console.log('🔍 [DEBUG] Campos extraídos para UPDATE:', {
@@ -546,17 +551,22 @@ const setupAPIRoutes = () => {
     app.put('/api/payments/:id', authenticateToken, async (req, res) => {
         try {
             const { id } = req.params;
-            const { subscription_id, payment_date, amount, payment_method, status } = req.body;
+            const { subscription_id, payment_date, amount, payment_method, status, confirmed } = req.body;
+
+            console.log('🔍 [DEBUG] Payment update data:', {
+                id, subscription_id, payment_date, amount, payment_method, status, confirmed
+            });
 
             const result = await client.query(
-                'UPDATE payments SET subscription_id = $1, payment_date = $2, amount = $3, payment_method = $4, status = $5 WHERE id = $6 RETURNING *',
-                [subscription_id, payment_date, amount, payment_method, status, id]
+                'UPDATE payments SET subscription_id = $1, payment_date = $2, amount = $3, payment_method = $4, status = $5, confirmed = $6 WHERE id = $7 RETURNING *',
+                [subscription_id, payment_date, amount, payment_method, status, confirmed, id]
             );
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Payment not found' });
             }
 
+            console.log('🔍 [DEBUG] Payment updated:', result.rows[0]);
             res.json(result.rows[0]);
         } catch (error) {
             console.error('Error updating payment:', error);
